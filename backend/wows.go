@@ -24,6 +24,7 @@ var (
 var (
 	ErrShipReturnInvalid = errors.New("Invalid return size for ship listing")
 	ErrUnknownRealm      = errors.New("Unknown Wows realm/server")
+	prefixOrder          = "0123456789abcdefghijklmnopqrstuvwxyz_"
 )
 
 func WowsRealm(realmStr string) (wargaming.Realm, error) {
@@ -346,13 +347,24 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 	return nil
 }
 
-func (backend *Backend) getNextPrefix(s string) string {
+func (backend *Backend) getNextPrefix(currentPrefix string, morePrecisionRequired bool, lastNick string) string {
 	// Define the prefix characters in order
-	prefixOrder := "0123456789abcdefghijklmnopqrstuvwxyz_"
+
+	// If we need more precision, we pick the last nick, and use the start of it as our next search prefix
+	// The start is set to be one character longer than the current prefix
+	if morePrecisionRequired && (len(lastNick) > len(currentPrefix)) {
+		return strings.ToLower(lastNick[0 : len(currentPrefix)+1])
+	}
+
+	// If we don't require more precision and we reached the last char, we can reduce the size of the prefix
+	// We can also start directly at the end of the last nickname obtained
+	if len(currentPrefix) > 3 && currentPrefix[len(currentPrefix)-1] == prefixOrder[len(prefixOrder)-1] {
+		currentPrefix = currentPrefix[0 : len(currentPrefix)-1]
+	}
 
 	// Find the indexes of the current prefix
-	indexes := make([]int, len(s))
-	for i, char := range s {
+	indexes := make([]int, len(currentPrefix))
+	for i, char := range currentPrefix {
 		indexes[i] = strings.IndexRune(prefixOrder, char)
 
 	}
@@ -370,6 +382,7 @@ func (backend *Backend) getNextPrefix(s string) string {
 	}
 
 	var result string
+	//backend.Logger.Debugf("getting next prefix for '%s', indexes: %v", currentPrefix, indexes)
 	for _, index := range indexes {
 		result += string(prefixOrder[index])
 	}
@@ -378,7 +391,11 @@ func (backend *Backend) getNextPrefix(s string) string {
 
 func (backend *Backend) ScrapAllPlayers() (err error) {
 	backend.Logger.Infof("Start scrapping all players")
-	prefix := "00a"
+	prefix := "000"
+	trigramPrefixAll := len(prefixOrder) * len(prefixOrder) * len(prefixOrder)
+	trigramPrefixCount := 0
+	apiCallCount := 0
+
 	for {
 		client := backend.client
 		realm := backend.Realm
@@ -391,8 +408,36 @@ func (backend *Backend) ScrapAllPlayers() (err error) {
 		if err != nil {
 			backend.Logger.Errorf("failed scrapping with prefix %s: %s", prefix, err.Error())
 		}
+		apiCallCount++
+		for _, playerData := range res {
+			player := &model.Player{
+				ID:   *playerData.AccountId,
+				Nick: *playerData.Nickname,
+			}
+
+			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
+		}
 		backend.Logger.Debugf("scrapped %d entries with prefix '%s'", len(res), prefix)
-		prefix = backend.getNextPrefix(prefix)
+		morePrecisionRequired := (len(res) == 100)
+		var lastNick string
+		if len(res) != 0 {
+			lastNick = *res[len(res)-1].Nickname
+		} else {
+			lastNick = prefix
+		}
+		prefix = backend.getNextPrefix(prefix, morePrecisionRequired, lastNick)
+		if len(prefix) == 3 {
+			trigramPrefixCount++
+		}
+
+		// If we got all the trigram prefixes, we can stop
+		if trigramPrefixCount > trigramPrefixAll {
+			break
+		}
+		// Every 1000 API call, log progress
+		if (apiCallCount % 100) == 0 {
+			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", trigramPrefixCount, trigramPrefixAll, apiCallCount, prefix)
+		}
 	}
 	backend.Logger.Infof("Finish scrapping all players")
 	return nil
