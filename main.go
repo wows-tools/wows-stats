@@ -63,28 +63,23 @@ func main() {
 	db.AutoMigrate(Schemas...)
 
 	api := backend.NewBackend(key, server, sugar.With("component", "backend"), db)
-	api.FillShipMapping()
+	//api.FillShipMapping()
 
 	var count int64
 	db.Table("clans").Count(&count)
 	if count < 1000 {
 		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (can take a few hours)")
-		err = api.ScrapAllClans()
+		err = api.ScrapAllPlayers()
 		if err != nil {
 			mainLogger.Errorf("first scan errored with: %s", err.Error())
 		}
 	}
 	s := gocron.NewScheduler(time.UTC)
 	mainLogger.Infof("adding 'updating all clans' task every 7 days")
-	s.Every(7).Days().At("10:30").Do(api.ScrapAllClans)
-
-	mainLogger.Infof("adding 'updating monitored clans' task every 2 hours")
-	s.Every(2).Hours().Do(api.ScrapMonitoredClans)
+	s.Every(30).Days().At("10:30").Do(api.ScrapAllPlayers)
 	s.StartAsync()
 
-
 	var wg sync.WaitGroup
-
 
 	mainLogger.Infof("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

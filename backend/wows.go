@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -39,11 +40,11 @@ func WowsRealm(realmStr string) (wargaming.Realm, error) {
 }
 
 type Backend struct {
-	client         *wargaming.Client
-	ShipMapping    map[int]int
-	Realm          wargaming.Realm
-	Logger         *zap.SugaredLogger
-	DB             *gorm.DB
+	client      *wargaming.Client
+	ShipMapping map[int]int
+	Realm       wargaming.Realm
+	Logger      *zap.SugaredLogger
+	DB          *gorm.DB
 }
 
 func min[T constraints.Ordered](a, b T) T {
@@ -73,11 +74,11 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
 		return nil
 	}
 	return &Backend{
-		client:         wargaming.NewClient(key, &wargaming.ClientOptions{HTTPClient: &http.Client{Timeout: 10 * time.Second}}),
-		ShipMapping:    make(map[int]int),
-		Realm:          wReam,
-		Logger:         logger,
-		DB:             db,
+		client:      wargaming.NewClient(key, &wargaming.ClientOptions{HTTPClient: &http.Client{Timeout: 10 * time.Second}}),
+		ShipMapping: make(map[int]int),
+		Realm:       wReam,
+		Logger:      logger,
+		DB:          db,
 	}
 }
 
@@ -345,37 +346,54 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 	return nil
 }
 
-func (backend *Backend) ScrapMonitoredClans() (err error) {
-	backend.Logger.Infof("start scrapping monitored clans")
-	var clans []model.Clan
-	backend.DB.Where("tracked = true").Find(&clans)
-	var ids []int
-	for _, clan := range clans {
-		ids = append(ids, clan.ID)
+func (backend *Backend) getNextPrefix(s string) string {
+	// Define the prefix characters in order
+	prefixOrder := "0123456789abcdefghijklmnopqrstuvwxyz_"
+
+	// Find the indexes of the current prefix
+	indexes := make([]int, len(s))
+	for i, char := range s {
+		indexes[i] = strings.IndexRune(prefixOrder, char)
+
 	}
-	err = backend.UpdateClans(ids)
-	backend.Logger.Infof("finish scrapping %d monitored clans", len(ids))
-	return err
-}
 
-func (backend *Backend) ScrapAllClans() (err error) {
-	backend.Logger.Infof("Start scrapping all clans")
-	page := 1
-	for {
-		backend.Logger.Infof("Start scrapping clan page [%d]", page)
-		clanIDs, err := backend.ListClansIds(page)
-		if err != nil {
-			return err
-		}
-
-		backend.UpdateClans(clanIDs)
-
-		backend.Logger.Infof("Finish scrapping clan page [%d]", page)
-		if len(clanIDs) < 100 {
+	// Increase the prefix index by one letter.
+	// If the last char of the prefix reached the last char of prefixOrder ('_'), set the index to 0 and update the previous prefix char
+	// Otherwise, simply increment
+	for i := len(indexes) - 1; i >= 0; i-- {
+		if indexes[i] >= (len(prefixOrder) - 1) {
+			indexes[i] = 0
+		} else {
+			indexes[i] += 1
 			break
 		}
-		page++
 	}
-	backend.Logger.Infof("Finish scrapping all clans")
+
+	var result string
+	for _, index := range indexes {
+		result += string(prefixOrder[index])
+	}
+	return result
+}
+
+func (backend *Backend) ScrapAllPlayers() (err error) {
+	backend.Logger.Infof("Start scrapping all players")
+	prefix := "00a"
+	for {
+		client := backend.client
+		realm := backend.Realm
+		limit := 100
+		res, _, err := client.Wows.AccountList(context.Background(), realm, prefix, &wows.AccountListOptions{
+			Fields: []string{"account_id", "nickname"},
+			Type:   wargaming.String("startswith"),
+			Limit:  &limit,
+		})
+		if err != nil {
+			backend.Logger.Errorf("failed scrapping with prefix %s: %s", prefix, err.Error())
+		}
+		backend.Logger.Debugf("scrapped %d entries with prefix '%s'", len(res), prefix)
+		prefix = backend.getNextPrefix(prefix)
+	}
+	backend.Logger.Infof("Finish scrapping all players")
 	return nil
 }
