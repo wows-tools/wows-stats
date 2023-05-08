@@ -202,7 +202,6 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 			WinRate:             float64(win) / float64(battles),
 			NumberT10:           T10Count,
 			HiddenProfile:       *playerData.HiddenProfile,
-			Tracked:             false,
 			ClanJoinDate:        JoinDate,
 		}
 		ret = append(ret, player)
@@ -264,7 +263,6 @@ func (backend *Backend) GetClansDetails(clanIDs []int) (ret []*model.Clan, err e
 			PlayerID:     *clan.LeaderId,
 			CreationDate: clan.CreatedAt.Time,
 			UpdatedDate:  clan.UpdatedAt.Time,
-			Tracked:      false,
 		})
 
 	}
@@ -292,10 +290,6 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 			err = backend.DB.Preload("Players").First(&clanPrev).Error
 			if err == nil {
 				// If the clan was previously tracked, we need to keep it tracked
-				if clanPrev.Tracked {
-					clan.Tracked = true
-
-				}
 				prevPlayersList := make([]int, len(clanPrev.Players))
 				backend.Logger.Debugf("Clan [%s] already present, computing player diff", clan.Tag)
 				for i, player := range clanPrev.Players {

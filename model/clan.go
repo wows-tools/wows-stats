@@ -16,7 +16,5 @@ type Clan struct {
 	Players      []*Player
 	PlayerIDs    []int `gorm:"-"`
 	ClanLeader   *Player
-	PlayerID     int      `gorm:"index"`
-	Tracked      bool     `gorm:"index"`
-	Filters      []Filter `gorm:"many2many:filter_tracked_clan;"`
+	PlayerID     int `gorm:"index"`
 }

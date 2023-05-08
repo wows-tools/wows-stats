@@ -19,7 +19,5 @@ type Player struct {
 	ClanID              int       `gorm:"index"`
 	ClanJoinDate        time.Time
 	Clan                *Clan
-	Tracked             bool `gorm:"index"`
 	PreviousClans       []PreviousClan
-	Filters             []Filter `gorm:"many2many:filter_tracked_player;"`
 }

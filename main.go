@@ -56,7 +56,6 @@ func main() {
 		&model.Player{},
 		&model.PreviousClan{},
 		&model.Clan{},
-		&model.Filter{},
 	}
 
 	// Migrate the schema
