@@ -152,13 +152,13 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 	realm := backend.Realm
 	client := backend.client
 	var ret []*model.Player
-	players, err := client.Wows.AccountInfo(context.Background(), realm, playerIds, &wows.AccountInfoOptions{
+	players, _, err := client.Wows.AccountInfo(context.Background(), realm, playerIds, &wows.AccountInfoOptions{
 		Fields: []string{"account_id", "created_at", "hidden_profile", "last_battle_time", "logout_at", "nickname", "statistics.pvp.wins", "statistics.pvp.battles", "statistics.battles"},
 	})
 	if err != nil {
 		return nil, err
 	}
-	clanPlayers, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
+	clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 	client := backend.client
 	var ret []int
 	limit := 100
-	res, err := client.Wows.ClansList(context.Background(), EURealm, &wows.ClansListOptions{
+	res, _, err := client.Wows.ClansList(context.Background(), EURealm, &wows.ClansListOptions{
 		Limit:  &limit,
 		PageNo: &page,
 		Fields: []string{"clan_id"},
@@ -231,7 +231,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 
 func (backend *Backend) GetClansDetails(clanIDs []int) (ret []*model.Clan, err error) {
 	client := backend.client
-	clanInfo, err := client.Wows.ClansInfo(context.Background(), EURealm, clanIDs, &wows.ClansInfoOptions{
+	clanInfo, _, err := client.Wows.ClansInfo(context.Background(), EURealm, clanIDs, &wows.ClansInfoOptions{
 		Extra:  []string{"members"},
 		Fields: []string{"description", "name", "tag", "clan_id", "created_at", "is_clan_disbanded", "updated_at", "members_ids", "leader_id"},
 	})
@@ -248,8 +248,6 @@ func (backend *Backend) GetClansDetails(clanIDs []int) (ret []*model.Clan, err e
 		if clan.IsClanDisbanded != nil && *clan.IsClanDisbanded {
 			continue
 		}
-
-		clanString := *clan.Name
 
 		var players []*model.Player
 		for _, memberId := range clan.MembersIds {
