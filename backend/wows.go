@@ -25,6 +25,7 @@ var (
 	ErrShipReturnInvalid = errors.New("Invalid return size for ship listing")
 	ErrUnknownRealm      = errors.New("Unknown Wows realm/server")
 	prefixOrder          = "0123456789abcdefghijklmnopqrstuvwxyz_"
+	pageSize             = 100
 )
 
 func WowsRealm(realmStr string) (wargaming.Realm, error) {
@@ -160,7 +161,7 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 	if err != nil {
 		return nil, err
 	}
-	clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
+	//clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -172,9 +173,9 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 
 		T10Count := 0
 		JoinDate := time.Now()
-		if clanPlayer, ok := clanPlayers[*playerData.AccountId]; ok {
-			JoinDate = clanPlayer.JoinedAt.Time
-		}
+		//if clanPlayer, ok := clanPlayers[*playerData.AccountId]; ok {
+		//	JoinDate = clanPlayer.JoinedAt.Time
+		//}
 
 		if withT10 {
 			T10Count, err = backend.GetPlayerT10Count(*playerData.AccountId)
@@ -214,7 +215,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 	backend.Logger.Debugf("Start listing clans page[%d]", page)
 	client := backend.client
 	var ret []int
-	limit := 100
+	limit := pageSize
 	res, _, err := client.Wows.ClansList(context.Background(), EURealm, &wows.ClansListOptions{
 		Limit:  &limit,
 		PageNo: &page,
@@ -279,7 +280,7 @@ func (backend *Backend) UpdatePlayerListT10(playerList []*model.Player) ([]*mode
 
 func (backend *Backend) UpdateClans(clanIDs []int) error {
 	for {
-		clanDetails, err := backend.GetClansDetails(clanIDs[0:(min(100, len(clanIDs)))])
+		clanDetails, err := backend.GetClansDetails(clanIDs[0:(min(pageSize, len(clanIDs)))])
 		if err != nil {
 			return err
 		}
@@ -333,10 +334,10 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 			}
 			backend.Logger.Debugf("Finish getting player details for clan [%s]", clan.Tag)
 		}
-		if len(clanIDs) < 100 {
+		if len(clanIDs) < pageSize {
 			break
 		}
-		clanIDs = clanIDs[100:]
+		clanIDs = clanIDs[pageSize:]
 	}
 	return nil
 }
@@ -383,8 +384,54 @@ func (backend *Backend) getNextPrefix(currentPrefix string, morePrecisionRequire
 	return result
 }
 
+func (backend *Backend) UpdateDetailsAllPlayers() (err error) {
+	backend.Logger.Infof("Start updating details for all players in DB")
+	offset := 0
+	for {
+		backend.Logger.Debugf("updating details for players %d to %d", offset, offset+pageSize-1)
+		var accountList []model.Player
+		backend.DB.Offset(offset).Limit(pageSize).Find(&accountList)
+
+		playerIDs := make([]int, len(accountList))
+		for i, account := range accountList {
+			playerIDs[i] = account.ID
+		}
+		players, err := backend.GetPlayerDetails(playerIDs, false)
+		if err != nil {
+			backend.Logger.Infof("Failed to get Players: %s", err.Error())
+		}
+		for _, player := range players {
+			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
+		}
+
+		// If we go less than the pageSize in the last query, it's time to stop
+		if len(accountList) < pageSize {
+			break
+		}
+		offset += pageSize
+
+	}
+	backend.Logger.Infof("Finish updating details for all players in DB")
+	return nil
+}
+
 func (backend *Backend) ScrapAllPlayers() (err error) {
 	backend.Logger.Infof("Start scrapping all players")
+	err = backend.ScanAllPlayers()
+	if err != nil {
+		return err
+	}
+
+	err = backend.UpdateDetailsAllPlayers()
+	if err != nil {
+		return err
+	}
+	backend.Logger.Infof("Finish scrapping all players")
+	return nil
+}
+
+func (backend *Backend) ScanAllPlayers() (err error) {
+	backend.Logger.Infof("Start scanning all players")
 	prefix := "000"
 	trigramPrefixAll := len(prefixOrder) * len(prefixOrder) * len(prefixOrder)
 	trigramPrefixCount := 0
@@ -393,7 +440,7 @@ func (backend *Backend) ScrapAllPlayers() (err error) {
 	for {
 		client := backend.client
 		realm := backend.Realm
-		limit := 100
+		limit := pageSize
 		res, _, err := client.Wows.AccountList(context.Background(), realm, prefix, &wows.AccountListOptions{
 			Fields: []string{"account_id", "nickname"},
 			Type:   wargaming.String("startswith"),
@@ -412,27 +459,32 @@ func (backend *Backend) ScrapAllPlayers() (err error) {
 			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
 		}
 		backend.Logger.Debugf("scrapped %d entries with prefix '%s'", len(res), prefix)
-		morePrecisionRequired := (len(res) == 100)
+		morePrecisionRequired := (len(res) == pageSize)
 		var lastNick string
 		if len(res) != 0 {
 			lastNick = *res[len(res)-1].Nickname
 		} else {
 			lastNick = prefix
 		}
+		// TODO compare old and new trigram prefix part to count trigrams
 		prefix = backend.getNextPrefix(prefix, morePrecisionRequired, lastNick)
+
+		// FIXME, we actually have a few trigrams that never pops as trigrams
 		if len(prefix) == 3 {
 			trigramPrefixCount++
 		}
 
 		// If we got all the trigram prefixes, we can stop
+		// FIXME, we actually have a few trigrams that never pops as trigrams
+		// So we overscan slightly
 		if trigramPrefixCount > trigramPrefixAll {
 			break
 		}
-		// Every 1000 API call, log progress
+		// Every 100 API call, log progress
 		if (apiCallCount % 100) == 0 {
 			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", trigramPrefixCount, trigramPrefixAll, apiCallCount, prefix)
 		}
 	}
-	backend.Logger.Infof("Finish scrapping all players")
+	backend.Logger.Infof("Finish scanning all players")
 	return nil
 }

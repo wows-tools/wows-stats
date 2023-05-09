@@ -68,7 +68,8 @@ func main() {
 	db.Table("clans").Count(&count)
 	if count < 1000 {
 		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (can take a few hours)")
-		err = api.ScrapAllPlayers()
+		//err = api.ScrapAllPlayers()
+		err = api.UpdateDetailsAllPlayers()
 		if err != nil {
 			mainLogger.Errorf("first scan errored with: %s", err.Error())
 		}
