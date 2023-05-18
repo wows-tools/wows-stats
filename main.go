@@ -56,10 +56,19 @@ func main() {
 		&model.Player{},
 		&model.PreviousClan{},
 		&model.Clan{},
+		&model.Version{},
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(Schemas...)
+	var version model.Version
+	version.Version = 0
+	version.Name = "version"
+	db.First(&version)
+	if version.Version < model.DBVersion {
+		db.AutoMigrate(Schemas...)
+		version.Version = model.DBVersion
+		db.Save(&version)
+	}
 
 	api := backend.NewBackend(key, server, sugar.With("component", "backend"), db)
 	//api.FillShipMapping()
@@ -69,14 +78,14 @@ func main() {
 	if count < 1000 {
 		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (can take a few hours)")
 		//err = api.ScrapAllPlayers()
-		err = api.UpdateDetailsAllPlayers()
+		err = api.ScrapAll()
 		if err != nil {
 			mainLogger.Errorf("first scan errored with: %s", err.Error())
 		}
 	}
 	s := gocron.NewScheduler(time.UTC)
 	mainLogger.Infof("adding 'updating all clans' task every 7 days")
-	s.Every(30).Days().At("10:30").Do(api.ScrapAllPlayers)
+	s.Every(30).Days().At("10:30").Do(api.ScrapAll)
 	s.StartAsync()
 
 	var wg sync.WaitGroup

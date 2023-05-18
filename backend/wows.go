@@ -156,12 +156,23 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 	client := backend.client
 	var ret []*model.Player
 	players, _, err := client.Wows.AccountInfo(context.Background(), realm, playerIds, &wows.AccountInfoOptions{
-		Fields: []string{"account_id", "created_at", "hidden_profile", "last_battle_time", "logout_at", "nickname", "statistics.pvp.wins", "statistics.pvp.battles", "statistics.battles"},
+		Fields: []string{"account_id", "created_at", "hidden_profile", "last_battle_time", "logout_at", "nickname",
+			"statistics.pvp.wins", "statistics.pvp.battles", "statistics.pvp.xp",
+			"statistics.pvp_solo.wins", "statistics.pvp_solo.battles", "statistics.pvp_solo.xp",
+			"statistics.pvp_div2.wins", "statistics.pvp_div2.battles", "statistics.pvp_div2.xp",
+			"statistics.pvp_div3.wins", "statistics.pvp_div3.battles", "statistics.pvp_div3.xp",
+			"statistics.rank_solo.wins", "statistics.rank_solo.battles", "statistics.rank_solo.xp",
+			"statistics.pve.wins", "statistics.pve.battles", "statistics.pve.xp",
+			"statistics.oper_solo.battles", "statistics.oper_solo.wins", "statistics.oper_solo.xp",
+		},
+		Extra: []string{
+			"statistics.pve", "statistics.rank_solo", "statistics.pvp_solo", "statistics.pvp_div2", "statistics.pvp_div3", "statistics.oper_solo",
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	//clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
+	clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -173,9 +184,12 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 
 		T10Count := 0
 		JoinDate := time.Now()
-		//if clanPlayer, ok := clanPlayers[*playerData.AccountId]; ok {
-		//	JoinDate = clanPlayer.JoinedAt.Time
-		//}
+
+		if len(clanPlayers) != 0 {
+			if clanPlayer, ok := clanPlayers[*playerData.AccountId]; ok && clanPlayer != nil && clanPlayer.JoinedAt != nil {
+				JoinDate = clanPlayer.JoinedAt.Time
+			}
+		}
 
 		if withT10 {
 			T10Count, err = backend.GetPlayerT10Count(*playerData.AccountId)
@@ -185,22 +199,97 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 		}
 		var battles int
 		var win int
-		if playerData.Statistics == nil || playerData.Statistics.Pvp == nil || playerData.Statistics.Pvp.Battles == nil || playerData.Statistics.Pvp.Wins == nil {
-			battles = 1
+		var wr float64
+		if playerData.Statistics == nil || playerData.Statistics.Pvp == nil || playerData.Statistics.Pvp.Battles == nil || *playerData.Statistics.Pvp.Battles == 0 || playerData.Statistics.Pvp.Wins == nil {
+			battles = 0
 			win = 0
-			backend.Logger.Debugf("no stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+			wr = 0
+			backend.Logger.Debugf("no pvp stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
 		} else {
 			battles = *playerData.Statistics.Pvp.Battles
 			win = *playerData.Statistics.Pvp.Wins
+			wr = float64(win) / float64(battles)
 		}
+		var coopbattles int
+		var coopwin int
+		var coopwr float64
+		if playerData.Statistics == nil || playerData.Statistics.Pve == nil || playerData.Statistics.Pve.Battles == nil || *playerData.Statistics.Pve.Battles == 0 || playerData.Statistics.Pve.Wins == nil {
+			coopbattles = 0
+			coopwin = 0
+			coopwr = 0
+			backend.Logger.Debugf("no pve stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+		} else {
+			coopbattles = *playerData.Statistics.Pve.Battles
+			coopwin = *playerData.Statistics.Pve.Wins
+			coopwr = float64(coopwin) / float64(coopbattles)
+		}
+		var operbattles int
+		var operwin int
+		var operwr float64
+		if playerData.Statistics == nil || playerData.Statistics.OperSolo == nil || playerData.Statistics.OperSolo.Battles == nil || *playerData.Statistics.OperSolo.Battles == 0 || playerData.Statistics.OperSolo.Wins == nil {
+			operbattles = 0
+			operwin = 0
+			operwr = 0
+			backend.Logger.Debugf("no oper stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+		} else {
+			operbattles = *playerData.Statistics.OperSolo.Battles
+			operwin = *playerData.Statistics.OperSolo.Wins
+			operwr = float64(operwin) / float64(operbattles)
+		}
+		var rankedbattles int
+		var rankedwin int
+		var rankedwr float64
+		if playerData.Statistics == nil || playerData.Statistics.RankSolo == nil || playerData.Statistics.RankSolo.Battles == nil || *playerData.Statistics.RankSolo.Battles == 0 || playerData.Statistics.RankSolo.Wins == nil {
+			rankedbattles = 0
+			rankedwin = 0
+			rankedwr = 0
+			backend.Logger.Debugf("no oper stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+		} else {
+			rankedbattles = *playerData.Statistics.RankSolo.Battles
+			rankedwin = *playerData.Statistics.RankSolo.Wins
+			rankedwr = float64(rankedwin) / float64(rankedbattles)
+		}
+
+		var divbattles int
+		var divwin int
+		var divwr float64
+		if playerData.Statistics == nil || playerData.Statistics.PvpDiv2 == nil || playerData.Statistics.PvpDiv2.Battles == nil || *playerData.Statistics.PvpDiv2.Battles == 0 || playerData.Statistics.PvpDiv2.Wins == nil {
+			divbattles = 0
+			divwin = 0
+			divwr = 0
+			backend.Logger.Debugf("no pvp div2 stats for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+		} else {
+			divbattles += *playerData.Statistics.PvpDiv2.Battles
+			divwin += *playerData.Statistics.PvpDiv2.Wins
+		}
+		if playerData.Statistics == nil || playerData.Statistics.PvpDiv3 == nil || playerData.Statistics.PvpDiv3.Battles == nil || *playerData.Statistics.PvpDiv3.Battles == 0 || playerData.Statistics.PvpDiv3.Wins == nil {
+			divbattles = 0
+			divwin = 0
+			backend.Logger.Debugf("no pvp div3 for player %s[%d]", *playerData.Nickname, *playerData.AccountId)
+		} else {
+			divbattles += *playerData.Statistics.PvpDiv3.Battles
+			divwin += *playerData.Statistics.PvpDiv3.Wins
+		}
+		if divbattles != 0 {
+			divwr = float64(divwin) / float64(divbattles)
+		}
+
 		player := &model.Player{
 			ID:                  *playerData.AccountId,
 			Nick:                *playerData.Nickname,
 			AccountCreationDate: playerData.CreatedAt.Time,
 			LastBattleDate:      playerData.LastBattleTime.Time,
 			LastLogoutDate:      playerData.LogoutAt.Time,
-			Battles:             battles,
-			WinRate:             float64(win) / float64(battles),
+			RandomBattles:       battles,
+			RandomWinRate:       wr,
+			RankedBattles:       rankedbattles,
+			RankedWinRate:       rankedwr,
+			RandomDivBattles:    divbattles,
+			RandomDivWinRate:    divwr,
+			CoopBattles:         coopbattles,
+			CoopWinRate:         coopwr,
+			OperBattles:         operbattles,
+			OperWinRate:         operwr,
 			NumberT10:           T10Count,
 			HiddenProfile:       *playerData.HiddenProfile,
 			ClanJoinDate:        JoinDate,
@@ -415,8 +504,35 @@ func (backend *Backend) UpdateDetailsAllPlayers() (err error) {
 	return nil
 }
 
-func (backend *Backend) ScrapAllPlayers() (err error) {
+func (backend *Backend) ScrapAllClans() (err error) {
+	backend.Logger.Infof("Start scrapping all clans")
+	page := 1
+	for {
+		backend.Logger.Infof("Start scrapping clan page [%d]", page)
+		clanIDs, err := backend.ListClansIds(page)
+		if err != nil {
+			return err
+		}
+
+		backend.UpdateClans(clanIDs)
+
+		backend.Logger.Infof("Finish scrapping clan page [%d]", page)
+		if len(clanIDs) < 100 {
+			break
+		}
+		page++
+	}
+	backend.Logger.Infof("Finish scrapping all clans")
+	return nil
+}
+
+func (backend *Backend) ScrapAll() (err error) {
 	backend.Logger.Infof("Start scrapping all players")
+	err = backend.ScrapAllClans()
+	if err != nil {
+		return err
+	}
+
 	err = backend.ScanAllPlayers()
 	if err != nil {
 		return err
@@ -426,6 +542,7 @@ func (backend *Backend) ScrapAllPlayers() (err error) {
 	if err != nil {
 		return err
 	}
+
 	backend.Logger.Infof("Finish scrapping all players")
 	return nil
 }
