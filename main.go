@@ -84,6 +84,11 @@ func main() {
 			mainLogger.Errorf("first scan errored with: %s", err.Error())
 		}
 	}
+
+	err = api.LoadWowsVersionsFromCSV("./misc/updates.csv")
+	if err != nil {
+		mainLogger.Errorf("WoWs updates filling failed: %s", err.Error())
+	}
 	s := gocron.NewScheduler(time.UTC)
 	mainLogger.Infof("adding 'updating all player task every 30 days")
 	s.Every(30).Days().At("10:30").Do(api.ScrapAll)
