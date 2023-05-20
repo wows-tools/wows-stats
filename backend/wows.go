@@ -470,6 +470,7 @@ func (backend *Backend) getNextPrefix(currentPrefix string, morePrecisionRequire
 	for _, index := range indexes {
 		result += string(prefixOrder[index])
 	}
+
 	return result
 }
 
@@ -528,11 +529,6 @@ func (backend *Backend) ScrapAllClans() (err error) {
 
 func (backend *Backend) ScrapAll() (err error) {
 	backend.Logger.Infof("Start scrapping all players")
-	err = backend.ScrapAllClans()
-	if err != nil {
-		return err
-	}
-
 	err = backend.ScanAllPlayers()
 	if err != nil {
 		return err
@@ -542,6 +538,14 @@ func (backend *Backend) ScrapAll() (err error) {
 	if err != nil {
 		return err
 	}
+
+	err = backend.ScrapAllClans()
+	if err != nil {
+		return err
+	}
+
+	// Clean-up, there are ~100k of these tests accounts all created the 2023-05-19 with 1927 random battles
+	backend.DB.Where("nick LIKE ? OR nick LIKE ?", "lp_ru_prod%", "auto_%").Where("random_battles = ?", 1927).Delete(&model.Player{})
 
 	backend.Logger.Infof("Finish scrapping all players")
 	return nil
