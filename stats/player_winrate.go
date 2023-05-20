@@ -44,12 +44,12 @@ func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
 	line := charts.NewLine()
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: generateChartTitle(minBattles),
+			Title:    generateChartTitle(minBattles),
 			Subtitle: fmt.Sprintf("Mean: %.5f, StdDev: %.5f, Pop: %d", mean, stdDev, int(population)),
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
-			Show:     true,
-			Trigger:  "axis",
+			Show:    true,
+			Trigger: "axis",
 			AxisPointer: &opts.AxisPointer{
 				Type: "line",
 			},
@@ -95,7 +95,7 @@ func generateNormalDistributionSeries(population, mean, stdDev float64, xLabels 
 func generateChartTitle(minBattles int) string {
 	title := "WR Distribution"
 	if minBattles > 0 {
-		title += fmt.Sprintf(" (Battles >: %d)", minBattles)
+		title += fmt.Sprintf(" (Battles > %d)", minBattles)
 	}
 	return title
 }

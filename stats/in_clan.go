@@ -16,12 +16,12 @@ func (server *StatsServer) PieClanProfiles() *charts.Pie {
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: "Player Clan Profiles",
+			Title: "Player In Clan",
 		}),
 	)
 
 	// Add data to the pie chart
-	pie.AddSeries("Player Clan Profiles", []opts.PieData{
+	pie.AddSeries("Player In Clan", []opts.PieData{
 		{Value: inClanCount, Name: "In Clans"},
 		{Value: notInClanCount, Name: "Not in Clans"},
 	})

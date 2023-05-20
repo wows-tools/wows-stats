@@ -16,7 +16,7 @@ func (server *StatsServer) PieHiddenProfiles() *charts.Pie {
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: "Player Profiles",
+			Title: "Hidden Profiles",
 		}),
 	)
 
@@ -29,7 +29,7 @@ func (server *StatsServer) PieHiddenProfiles() *charts.Pie {
 		charts.WithLabelOpts(
 			opts.Label{
 				Show:      true,
-				Formatter: "{b} : {d}%",
+				Formatter: "{b} : {d}% ({c})",
 			},
 		),
 	)
