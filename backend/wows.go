@@ -545,7 +545,10 @@ func (backend *Backend) ScrapAll() (err error) {
 	}
 
 	// Clean-up, there are ~100k of these tests accounts all created the 2023-05-19 with 1927 random battles
-	backend.DB.Where("nick LIKE ? OR nick LIKE ?", "lp_ru_prod%", "auto_%").Where("random_battles = ?", 1927).Delete(&model.Player{})
+	backend.DB.Where("nick LIKE 'pt%tpt' or nick LIKE 'lp_ru_prod%' OR nick LIKE 'auto_%'").Where("random_battles = ?", 1927).Delete(&model.Player{})
+	backend.DB.Where("nick LIKE 'pt%tpt' or nick LIKE 'lp_ru_prod%' OR nick LIKE 'auto_%'").Where("random_battles = ?", 92).Delete(&model.Player{})
+	backend.DB.Where("nick LIKE 'pt%tpt' or nick LIKE 'lp_ru_prod%' OR nick LIKE 'auto_%'").Where("random_battles = ?", 0).Delete(&model.Player{})
+	backend.DB.Where("nick LIKE 'pt%tpt' or nick LIKE 'lp_ru_prod%' OR nick LIKE 'auto_%'").Where("random_battles = ?", 5).Delete(&model.Player{})
 
 	backend.Logger.Infof("Finish scrapping all players")
 	return nil
