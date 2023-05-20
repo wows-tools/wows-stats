@@ -5,15 +5,13 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/wows-tools/wows-stats/backend"
 	"github.com/wows-tools/wows-stats/model"
+	"github.com/wows-tools/wows-stats/stats"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"moul.io/zapgorm2"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 )
 
@@ -29,6 +27,7 @@ func main() {
 	key := os.Getenv("WOWS_WOWSAPIKEY")
 	server := os.Getenv("WOWS_REALM")
 	debug := os.Getenv("WOWS_DEBUG")
+	listen := os.Getenv("WOWS_LISTEN")
 
 	var loggerConfig zap.Config
 	if debug == "true" {
@@ -93,11 +92,7 @@ func main() {
 	s.Every(30).Days().At("10:30").Do(api.ScrapAll)
 	s.StartAsync()
 
-	var wg sync.WaitGroup
-
-	mainLogger.Infof("Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-sc
-	wg.Wait()
+	mainLogger.Infof("Server starting on '%s'.  Press CTRL-C to exit.", listen)
+	statsServer := stats.NewStatsServer(listen, sugar.With("component", "stats_server"), db)
+	statsServer.Server()
 }

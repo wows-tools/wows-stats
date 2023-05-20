@@ -12,6 +12,15 @@ github.com/IceflowRE/go-wargaming/v4/wargaming/wows
 # github.com/go-co-op/gocron v1.25.0
 ## explicit; go 1.20
 github.com/go-co-op/gocron
+# github.com/go-echarts/go-echarts/v2 v2.2.6
+## explicit; go 1.15
+github.com/go-echarts/go-echarts/v2/actions
+github.com/go-echarts/go-echarts/v2/charts
+github.com/go-echarts/go-echarts/v2/datasets
+github.com/go-echarts/go-echarts/v2/opts
+github.com/go-echarts/go-echarts/v2/render
+github.com/go-echarts/go-echarts/v2/templates
+github.com/go-echarts/go-echarts/v2/types
 # github.com/jinzhu/inflection v1.0.0
 ## explicit
 github.com/jinzhu/inflection
