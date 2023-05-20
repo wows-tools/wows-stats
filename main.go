@@ -57,6 +57,7 @@ func main() {
 		&model.PreviousClan{},
 		&model.Clan{},
 		&model.Version{},
+		&model.WowsVersion{},
 	}
 
 	// Migrate the schema

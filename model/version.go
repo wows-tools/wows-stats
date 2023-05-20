@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	DBVersion = 2
+	DBVersion = 3
 )
 
 type Version struct {
