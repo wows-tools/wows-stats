@@ -1,15 +1,10 @@
 package model
 
-import (
-	"gorm.io/gorm"
-)
-
 const (
-	DBVersion = 3
+	DBVersion = 4
 )
 
 type Version struct {
-	gorm.Model
 	Name    string `gorm:"primaryKey"`
 	Version int
 }
