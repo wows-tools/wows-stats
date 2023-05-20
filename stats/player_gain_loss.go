@@ -1,10 +1,10 @@
 package stats
 
 import (
+	"fmt"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/wows-tools/wows-stats/model"
-	"fmt"
 	"sort"
 )
 
@@ -95,7 +95,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 	barGL := charts.NewBar()
 	barGL.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title:    fmt.Sprintf("Player Gain/Loss per Month (players with +%d random battles and +%.3f%% WR)", minBattles, minWR * 100),
+			Title:    fmt.Sprintf("Player Gain/Loss per Month (players with +%d random battles and +%.3f%% WR)", minBattles, minWR*100),
 			Subtitle: "Based on account creation date & last battle date (ignoring last 2 months)",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
@@ -120,7 +120,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 	barNet := charts.NewBar()
 	barNet.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title:    fmt.Sprintf("Player Net Gain/Loss per Month (players with +%d random battles and +%.3f%% WR)", minBattles, minWR * 100),
+			Title:    fmt.Sprintf("Player Net Gain/Loss per Month (players with +%d random battles and +%.3f%% WR)", minBattles, minWR*100),
 			Subtitle: "Based on account creation date & last battle date (ignoring last 2 months",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{

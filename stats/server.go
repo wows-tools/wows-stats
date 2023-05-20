@@ -51,6 +51,8 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 	pieWinRateDist1000 := server.DistributionByWinRate(1000)
 	page.AddCharts(pieWinRateDist1000)
 
+	barWRBattles := server.WinRateByBattles()
+	page.AddCharts(barWRBattles)
 
 	page.Render(w)
 	return
