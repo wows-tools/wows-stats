@@ -93,6 +93,6 @@ func main() {
 	s.StartAsync()
 
 	mainLogger.Infof("Server starting on '%s'.  Press CTRL-C to exit.", listen)
-	statsServer := stats.NewStatsServer(listen, sugar.With("component", "stats_server"), db)
+	statsServer := stats.NewStatsServer(listen, sugar.With("component", "stats_server"), db, server)
 	statsServer.Server()
 }
