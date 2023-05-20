@@ -75,7 +75,7 @@ func main() {
 
 	var count int64
 	db.Table("clans").Count(&count)
-	if count < 1000 {
+	if count < 100000000 {
 		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (full dump takes roughly a day)")
 		err = api.ScrapAll()
 		if err != nil {
