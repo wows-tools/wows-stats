@@ -35,7 +35,7 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 	pieInClan := server.PieClanProfiles()
 	page.AddCharts(pieInClan)
 
-	pieWinRateDist := server.DistributionByWinRate(0)
+	pieWinRateDist := server.DistributionByWinRate(100)
 	page.AddCharts(pieWinRateDist)
 
 	pieWinRateDist1000 := server.DistributionByWinRate(1000)

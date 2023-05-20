@@ -43,6 +43,7 @@ func main() {
 	}
 	defer logger.Sync()
 	glogger := zapgorm2.New(logger)
+	glogger.SlowThreshold = time.Second
 	sugar := logger.Sugar()
 	mainLogger := sugar.With("component", "main")
 
@@ -75,7 +76,7 @@ func main() {
 
 	var count int64
 	db.Table("clans").Count(&count)
-	if count < 100000000 {
+	if count < 1000 {
 		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (full dump takes roughly a day)")
 		err = api.ScrapAll()
 		if err != nil {
