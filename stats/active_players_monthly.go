@@ -22,7 +22,7 @@ func (server *StatsServer) ActivePlayersMonthly() *charts.Line {
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Number of Active Players Each Month",
-			Subtitle: "Based on last battle and account creation dates (warning: doesn't account for 'pause')",
+			Subtitle: "Based on last battle and account creation dates (warning: assumes player is active between these dates)",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    true,

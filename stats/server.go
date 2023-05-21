@@ -20,7 +20,7 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 
 	// Create a FlexLayout component
 	page.SetLayout(components.PageFlexLayout)
-	page.Initialization.PageTitle = "WoWs Stats, server: " + server.Realm
+	page.Initialization.PageTitle = "WoWs Stats || server " + server.Realm
 
 	gainloss := server.PlayerGainLossBar(0, 0)
 	page.AddCharts(gainloss[0])
@@ -54,6 +54,12 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 
 	barWRBattles := server.WinRateByBattles()
 	page.AddCharts(barWRBattles)
+
+	matrix := server.ScatterPlotMatrix()
+	page.AddCharts(matrix)
+
+	barBattles := server.BarChartByRandomBattles()
+	page.AddCharts(barBattles)
 
 	page.Render(w)
 	return
