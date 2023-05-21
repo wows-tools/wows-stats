@@ -20,6 +20,7 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 
 	// Create a FlexLayout component
 	page.SetLayout(components.PageFlexLayout)
+	page.Initialization.PageTitle = "WoWs Stats, server: " + server.Realm
 
 	gainloss := server.PlayerGainLossBar(0, 0)
 	page.AddCharts(gainloss[0])
