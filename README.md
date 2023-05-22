@@ -84,6 +84,29 @@ You can also enable more verbose logs if needed with the `-debug` flag:
 ./wows-stats -apikey "xxxxx" -output index.html -server eu -debug
 ```
 
+# Development
+
+The project is separated in two main parts:
+
+* [Data collection](https://github.com/wows-tools/wows-stats/tree/main/backend)
+* [Report Generation](https://github.com/wows-tools/wows-stats/tree/main/stats)
+
+The raw data is stored in an SQLite DB, and its schema is defined [here](https://github.com/wows-tools/wows-stats/tree/main/model)
+
+If you want to access the DB directly (after data collection of course):
+
+```shell
+export WOWS_SERVER=eu
+sqlite3 "$WOWS_SERVER-stats.db"
+```
+
+And then run whatever query you want:
+```
+SQLite version 3.40.1 2022-12-28 14:03:47
+Enter ".help" for usage hints.
+sqlite> SELECT AVG(random_win_rate) from players where random_battles > 7000;
+```
+
 # Acknowledgement and Copyright
 
 ```
