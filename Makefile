@@ -1,15 +1,15 @@
 SOURCES := $(shell find ./ -type f -not -path '*/.*' -not -name '*_test.go' -name '*.go')
 
 all:
-	$(MAKE) wows-recruiting-bot
+	$(MAKE) wows-stats
 
-wows-recruiting-bot: ${SOURCES}
+wows-stats: ${SOURCES}
 	go build
 
 test:
 	go test
 
 clean:
-	rm -f wows-recruiting-bot
+	rm -f wows-stats
 
 .PHONY: clean test clean-all all
