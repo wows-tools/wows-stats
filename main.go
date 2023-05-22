@@ -1,8 +1,8 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/go-co-op/gocron"
 	"github.com/wows-tools/wows-stats/backend"
 	"github.com/wows-tools/wows-stats/model"
 	"github.com/wows-tools/wows-stats/stats"
@@ -24,13 +24,31 @@ func min[T constraints.Ordered](a, b T) T {
 
 func main() {
 
-	key := os.Getenv("WOWS_WOWSAPIKEY")
-	server := os.Getenv("WOWS_REALM")
-	debug := os.Getenv("WOWS_DEBUG")
-	listen := os.Getenv("WOWS_LISTEN")
+	var (
+		apiKey         string
+		server         string
+		debug          bool
+		output         string
+		skipScraping   bool
+		skipGeneration bool
+	)
+
+	flag.StringVar(&apiKey, "apikey", "", "Wargaming.net API key")
+	flag.StringVar(&server, "server", "", "World of Warships server")
+	flag.BoolVar(&debug, "debug", false, "Enable debug mode")
+	flag.StringVar(&output, "output", "", "Output file path (required)")
+	flag.BoolVar(&skipScraping, "skip-scraping", false, "Skip scraping data")
+	flag.BoolVar(&skipGeneration, "skip-generation", false, "Skip report generation")
+	flag.Parse()
+
+	if apiKey == "" || server == "" || output == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
 	var loggerConfig zap.Config
-	if debug == "true" {
+
+	if debug {
 		loggerConfig = zap.NewDevelopmentConfig()
 	} else {
 		loggerConfig = zap.NewProductionConfig()
@@ -47,7 +65,8 @@ func main() {
 	sugar := logger.Sugar()
 	mainLogger := sugar.With("component", "main")
 
-	db, err := gorm.Open(sqlite.Open("wows-stats.db"), &gorm.Config{Logger: glogger})
+	dbName := server + "-stats.db"
+	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{Logger: glogger})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -71,29 +90,17 @@ func main() {
 		db.Save(&version)
 	}
 
-	api := backend.NewBackend(key, server, sugar.With("component", "backend"), db)
-	//api.FillShipMapping()
+	api := backend.NewBackend(apiKey, server, sugar.With("component", "backend"), db)
 
-	var count int64
-	db.Table("clans").Count(&count)
-	if count < 1000 {
-		mainLogger.Infof("DB is empty, doing an initial complete scan, please wait (full dump takes roughly a day)")
+	if !skipScraping {
 		err = api.ScrapAll()
 		if err != nil {
 			mainLogger.Errorf("first scan errored with: %s", err.Error())
 		}
 	}
 
-	//err = api.LoadWowsVersionsFromCSV("./misc/updates.csv")
-	//if err != nil {
-	//	mainLogger.Errorf("WoWs updates filling failed: %s", err.Error())
-	//}
-	s := gocron.NewScheduler(time.UTC)
-	mainLogger.Infof("adding 'updating all player task every 30 days")
-	s.Every(30).Days().At("10:30").Do(api.ScrapAll)
-	s.StartAsync()
-
-	mainLogger.Infof("Server starting on '%s'.  Press CTRL-C to exit.", listen)
-	statsServer := stats.NewStatsServer(listen, sugar.With("component", "stats_server"), db, server)
-	statsServer.Server()
+	if !skipGeneration {
+		statsServer := stats.NewStatsServer(output, sugar.With("component", "stats_server"), db, server)
+		statsServer.GenerateReport()
+	}
 }

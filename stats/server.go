@@ -4,17 +4,17 @@ import (
 	"github.com/go-echarts/go-echarts/v2/components"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"net/http"
+	"os"
 )
 
 type StatsServer struct {
 	Logger *zap.SugaredLogger
 	DB     *gorm.DB
-	Listen string
+	Output string
 	Realm  string
 }
 
-func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
+func (server *StatsServer) GenerateReport() {
 	// Set up the Go-Echarts components
 	page := components.NewPage()
 
@@ -30,15 +30,22 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 	page.AddCharts(gainloss200[0])
 	page.AddCharts(gainloss200[1])
 
-	gainloss2000 := server.PlayerGainLossBar(2000, 0.55)
+	gainloss2000 := server.PlayerGainLossBar(2000, 0)
 	page.AddCharts(gainloss2000[0])
 	page.AddCharts(gainloss2000[1])
+
+	gainloss2000wr55 := server.PlayerGainLossBar(2000, 0.55)
+	page.AddCharts(gainloss2000wr55[0])
+	page.AddCharts(gainloss2000wr55[1])
 
 	activePlayersLast3Months := server.ActivePlayersPie()
 	page.AddCharts(activePlayersLast3Months)
 
 	activePlayersMonthly := server.ActivePlayersMonthly()
 	page.AddCharts(activePlayersMonthly)
+
+	//monthlyBattles := server.MonthlyBattleEstimation()
+	//page.AddCharts(monthlyBattles)
 
 	pieHiddenProfile := server.PieHiddenProfiles()
 	page.AddCharts(pieHiddenProfile)
@@ -61,20 +68,21 @@ func (server *StatsServer) All(w http.ResponseWriter, r *http.Request) {
 	barBattles := server.BarChartByRandomBattles()
 	page.AddCharts(barBattles)
 
-	page.Render(w)
+	f, err := os.OpenFile(server.Output, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		server.Logger.Errorf("error opening the file %s", err.Error())
+		return
+	}
+	defer f.Close()
+	page.Render(f)
 	return
 }
 
-func NewStatsServer(listen string, logger *zap.SugaredLogger, db *gorm.DB, realm string) *StatsServer {
+func NewStatsServer(output string, logger *zap.SugaredLogger, db *gorm.DB, realm string) *StatsServer {
 	return &StatsServer{
 		Logger: logger,
 		DB:     db,
-		Listen: listen,
+		Output: output,
 		Realm:  realm,
 	}
-}
-
-func (server *StatsServer) Server() {
-	http.HandleFunc("/", server.All)
-	http.ListenAndServe(server.Listen, nil)
 }
