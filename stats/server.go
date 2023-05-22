@@ -41,11 +41,14 @@ func (server *StatsServer) GenerateReport() {
 	activePlayersLast3Months := server.ActivePlayersPie()
 	page.AddCharts(activePlayersLast3Months)
 
+	startStopHeatmap := serverGeneratePlayerStartStopChart()
+	page.AddCharts(startStopHeatmap)
+
 	activePlayersMonthly := server.ActivePlayersMonthly()
 	page.AddCharts(activePlayersMonthly)
 
-	//monthlyBattles := server.MonthlyBattleEstimation()
-	//page.AddCharts(monthlyBattles)
+	monthlyBattles := server.MonthlyBattleEstimation()
+	page.AddCharts(monthlyBattles)
 
 	pieHiddenProfile := server.PieHiddenProfiles()
 	page.AddCharts(pieHiddenProfile)
@@ -68,7 +71,7 @@ func (server *StatsServer) GenerateReport() {
 	barBattles := server.BarChartByRandomBattles()
 	page.AddCharts(barBattles)
 
-	f, err := os.OpenFile(server.Output, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(server.Output, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		server.Logger.Errorf("error opening the file %s", err.Error())
 		return
