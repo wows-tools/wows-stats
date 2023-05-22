@@ -18,7 +18,7 @@ make
 
 # Running
 
-To run this bot, you need:
+To run this tool, you need:
 * a WoWs API key
 * to be patient 😀
 
