@@ -11,16 +11,16 @@ func (server *StatsServer) MonthlyBattleEstimation() *charts.Line {
 	line := charts.NewLine()
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: "Estimated Monthly Battles",
+			Title:    "Estimated Monthly Battles",
 			Subtitle: "Sum of monthly average battle per player per month (warning: assumes player plays a constant number of battles per day)",
 		}),
-                charts.WithTooltipOpts(opts.Tooltip{
-                        Show:    true,
-                        Trigger: "axis",
-                        AxisPointer: &opts.AxisPointer{
-                                Type: "line",
-                        },
-                }),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show:    true,
+			Trigger: "axis",
+			AxisPointer: &opts.AxisPointer{
+				Type: "line",
+			},
+		}),
 	)
 
 	pageSize := 100000

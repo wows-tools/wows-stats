@@ -41,7 +41,7 @@ func (server *StatsServer) GenerateReport() {
 	activePlayersLast3Months := server.ActivePlayersPie()
 	page.AddCharts(activePlayersLast3Months)
 
-	startStopHeatmap := serverGeneratePlayerStartStopChart()
+	startStopHeatmap := server.GeneratePlayerStartStopChart()
 	page.AddCharts(startStopHeatmap)
 
 	activePlayersMonthly := server.ActivePlayersMonthly()
