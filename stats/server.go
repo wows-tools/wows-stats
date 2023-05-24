@@ -1,7 +1,6 @@
 package stats
 
 import (
-	"github.com/go-echarts/go-echarts/v2/components"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"os"
@@ -16,10 +15,10 @@ type StatsServer struct {
 
 func (server *StatsServer) GenerateReport() {
 	// Set up the Go-Echarts components
-	page := components.NewPage()
+	page := NewPage()
 
 	// Create a FlexLayout component
-	page.SetLayout(components.PageFlexLayout)
+	page.SetLayout(PageFlexLayout)
 	page.Initialization.PageTitle = "WoWs Stats || server " + server.Realm
 
 	gainloss := server.PlayerGainLossBar(0, 0)
