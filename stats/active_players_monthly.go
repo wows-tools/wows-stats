@@ -7,6 +7,36 @@ import (
 	"time"
 )
 
+const (
+	ActivePlayerMethodology = `
+## Description
+
+Estimation of the number of active players each month.
+
+## Code
+
+[https://github.com/wows-tools/wows-stats/blob/main/stats/active_players_monthly.go](https://github.com/wows-tools/wows-stats/blob/main/stats/active_players_monthly.go)
+
+## Methodology
+
+Take each months an account was created (trick to get all the individual months in the lifespan of the game).
+
+For each month, count the number of players who have created their account before the end of the month and have their last battle after the last day of the month.
+
+## Caveats
+
+This graph is too problematic, counting a player "active" soly based on account creation date and last battle date is too much of an approximation.
+
+It over-estimates the number of active players, making for a misleading graph.
+
+This chart **needs to be removed** and replaced with actual historic data.
+
+For the past, this data is unfortunately unavailable.
+
+Ideally it will be complemented by the number of monthly battles.
+`
+)
+
 func (server *StatsServer) ActivePlayersMonthly() *charts.Line {
 	// Query the database to get the number of active players each month
 	playerCounts, months, _ := server.getMonthlyPlayerCounts()
