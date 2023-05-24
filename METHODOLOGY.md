@@ -67,6 +67,25 @@ It's really hard to differenciate player who have left the game for good and pla
 
 This is especially true for the most recent dates as players who only "left" the game 3 months ago are reasonably likely to return.
 
+Another caveats is when additional filtering is applied. Players are not 'born' with 2k battles or 55% WR.
+
+Players with 2000 battle or more play ~3 battles per day on average, meaning it takes ~2 years to reach this number of battles.
+And that's just an average, roughly half the players will take longer (Complete, guesstimate, but I probably around 3 years for 80% of players which will ever reach 2k battles)
+
+For players with 200 battles or more, it's 1.7 battles per day, meaning ~4 months (guesstimate ~6 months for 80% of players). 
+
+The guestimations are, well, guestimations, but they are their to underlying the fact that ignoring the last 2 years or 4 months respectively is not sufficient.
+
+Average battle per day was computed like that:
+
+```sql
+SELECT
+    AVG(random_battles / (julianday(last_battle_date) - julianday(account_creation_date) + 1)) AS average_battles_per_day
+FROM
+    players
+WHERE random_battles >= 2000;
+```
+
 
 ### Possible improvements
 
