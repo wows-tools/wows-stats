@@ -1,11 +1,11 @@
 package stats
 
 import (
+	"fmt"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"log"
 	"sort"
-	"fmt"
 )
 
 func (server *StatsServer) GeneratePlayerStartStopChart() *charts.Bar3D {
@@ -44,7 +44,7 @@ func (server *StatsServer) GeneratePlayerStartStopChart() *charts.Bar3D {
 	// Sort the label lists
 	sort.Strings(Labels)
 	max := 0
-	lenData := len(Labels)-2
+	lenData := len(Labels) - 2
 	//lenData := 10
 	for i, xlabel := range Labels[:lenData] {
 		for j, ylabel := range Labels[:lenData] {
@@ -72,7 +72,6 @@ function (params) {
       );
 }
 `
-
 
 	//bar3DRangeColor := []string{
 	//	"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8",
@@ -131,27 +130,27 @@ function (params) {
 }
 
 func generateColorRange() []string {
-    var colorRange []string
+	var colorRange []string
 
-    // RGB values for white
-    r := 255
-    g := 255
-    b := 255
+	// RGB values for white
+	r := 255
+	g := 255
+	b := 255
 
-    // Calculate the color increment
-    increment := 255 / 100
+	// Calculate the color increment
+	increment := 255 / 100
 
-    // Generate the color range
-    for i := 0; i < 100; i++ {
-        // Convert RGB values to hexadecimal string
-        hexColor := fmt.Sprintf("#%02x%02x%02x", r, g, b)
+	// Generate the color range
+	for i := 0; i < 100; i++ {
+		// Convert RGB values to hexadecimal string
+		hexColor := fmt.Sprintf("#%02x%02x%02x", r, g, b)
 
-        // Add the color to the range
-        colorRange = append(colorRange, hexColor)
+		// Add the color to the range
+		colorRange = append(colorRange, hexColor)
 
-        // Decrement the red value
-        r -= increment
-    }
+		// Decrement the red value
+		r -= increment
+	}
 
-    return colorRange
+	return colorRange
 }
