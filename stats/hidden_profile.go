@@ -9,19 +9,21 @@ const (
 	PieHiddenProfilesMethodology = `
 ### Description
 
-TODO
+Displays the proportion of hidden profiles.
 
 ### Code
 
-TODO
+[stats/hidden_profile.go](https://github.com/wows-tools/wows-stats/blob/main/stats/hidden_profile.go)
 
 ### Methodology
 
-TODO
+* Count players with an hidden profile
+* Count players with a public profile
+* Plot
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 

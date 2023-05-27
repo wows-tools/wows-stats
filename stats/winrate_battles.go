@@ -12,19 +12,23 @@ const (
 	WinRateByBattlesMethodology = `
 ### Description
 
-TODO
+Displays the average Win Rate by battle count (steps of 500 battles)
 
 ### Code
 
-TODO
+[stats/winrate_battles.go][https://github.com/wows-tools/wows-stats/blob/main/stats/winrate_battles.go]
 
 ### Methodology
 
-TODO
+* Divide the number of random battles of each player by 500 (Integer Division) 
+* Group by this value, and compute the average win rate of each Group
+* Plot the chart
+
+We ignore players with less  than 30000 (not enough players with that many battle for the average to be significant)
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 
