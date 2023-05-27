@@ -7,37 +7,37 @@ var PageTpl = `
     {{- template "header" . }}
 
 <body class="p-1 m-0 border-0 bd-example">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
 
-      <div class="container-xl">
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item dropdown">
+    <div class="container-xl">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item dropdown">
 
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Servers</a>
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Servers</a>
 
-              <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="https://asia.wows-stats.kakwalab.ovh">ASIA</a></li>
-                  <li><a class="dropdown-item" href="https://eu.wows-stats.kakwalab.ovh">EU</a></li>
-                  <li><a class="dropdown-item" href="https://na.wows-stats.kakwalab.ovh">NA</a></li>
-              </ul>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/archive/">Older Reports</a>
-            </li>
-          </ul>
-          <form class="d-flex" role="about">
-            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#aboutModal">
-                About
-            </button>
-          </form>
-        </div>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="https://asia.wows-stats.kakwalab.ovh">ASIA</a></li>
+                <li><a class="dropdown-item" href="https://eu.wows-stats.kakwalab.ovh">EU</a></li>
+                <li><a class="dropdown-item" href="https://na.wows-stats.kakwalab.ovh">NA</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/archive/">Older Reports</a>
+          </li>
+        </ul>
+        <form class="d-flex" role="about">
+          <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#aboutModal">
+              About
+          </button>
+        </form>
       </div>
-    </nav>
-
-    <div class="container">
-      <div class="box"> {{- range .Charts }} {{ template "base" . }} {{- end }} </div>
     </div>
+  </nav>
+
+  <div class="container-fluid">
+    {{- range .ChartRows }} {{ template "base" . }} {{- end }}
+  </div>
   
   
   <!-- About modal -->

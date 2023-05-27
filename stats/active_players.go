@@ -6,6 +6,26 @@ import (
 	"time"
 )
 
+const (
+	ActivePlayersPieMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) ActivePlayersPie() *charts.Pie {
 	// Get the number of active players during the last 3 months
 	activePlayersCount, _ := server.getActivePlayersCount(3)
@@ -42,6 +62,8 @@ func (server *StatsServer) ActivePlayersPie() *charts.Pie {
 
 func (server *StatsServer) getActivePlayersCount(months int) (int, error) {
 	// Calculate the start date for the last 3 months
+	// FIXME use the last scan date instead of the current date
+	// Not a critical issue if we generate the graph right after the scan
 	startDate := time.Now().AddDate(0, -months, 0)
 
 	// Get the count of active players during the specified period
@@ -53,6 +75,8 @@ func (server *StatsServer) getActivePlayersCount(months int) (int, error) {
 
 func (server *StatsServer) getInactivePlayersCount(months int) (int, error) {
 	// Calculate the start date for the last 3 months
+	// FIXME use the last scan date instead of the current date
+	// Not a critical issue if we generate the graph right after the scan
 	startDate := time.Now().AddDate(0, -months, 0)
 
 	// Get the count of active players during the specified period

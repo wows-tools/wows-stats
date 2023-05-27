@@ -5,6 +5,26 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
+const (
+	PieClanProfilesMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) PieClanProfiles() *charts.Pie {
 	// Get the number of players in clans
 	inClanCount, _ := server.getPlayerCountByClan(true)

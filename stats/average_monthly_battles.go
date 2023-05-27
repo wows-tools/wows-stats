@@ -7,6 +7,26 @@ import (
 	"sort"
 )
 
+const (
+	MonthlyBattleEstimationMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) MonthlyBattleEstimation() *charts.Line {
 	line := charts.NewLine()
 	line.SetGlobalOptions(

@@ -19,56 +19,66 @@ func (server *StatsServer) GenerateReport() {
 
 	// Create a FlexLayout component
 	page.SetLayout(PageFlexLayout)
-	page.Initialization.PageTitle = "WoWs Stats || server " + server.Realm
+	page.Initialization.PageTitle = "WoWs Stats (" + server.Realm + ")"
 
-	gainloss := server.PlayerGainLossBar(0, 0)
-	page.AddCharts(gainloss[0])
-	page.AddCharts(gainloss[1])
+	page.AddRow(NewMarkdown("# Statitics for the **" + server.Realm + "** server"))
 
-	gainloss200 := server.PlayerGainLossBar(200, 0)
-	page.AddCharts(gainloss200[0])
-	page.AddCharts(gainloss200[1])
+	page.AddRow(NewMarkdown("---\n## Server Activity Statistics\n---"))
+	gainloss := server.PlayerGainLossBar(0)
+	page.AddRow(gainloss[0], NewMarkdown(PlayerGainLossBarMethodology))
 
-	gainloss2000 := server.PlayerGainLossBar(2000, 0)
-	page.AddCharts(gainloss2000[0])
-	page.AddCharts(gainloss2000[1])
+	page.AddRow(gainloss[1], NewMarkdown(PlayerGainLossBarNetMethodology))
 
-	gainloss2000wr55 := server.PlayerGainLossBar(2000, 0.55)
-	page.AddCharts(gainloss2000wr55[0])
-	page.AddCharts(gainloss2000wr55[1])
+	gainloss200 := server.PlayerGainLossBar(200)
+	page.AddRow(gainloss200[0], NewMarkdown(PlayerGainLossBarNetMethodology))
+	page.AddRow(gainloss200[1], NewMarkdown(PlayerGainLossBarNetWithBattlesMethodoloy))
+
+	gainloss2000 := server.PlayerGainLossBar(2000)
+	page.AddRow(gainloss2000[0], NewMarkdown(PlayerGainLossBarNetWithBattlesMethodoloy))
+	page.AddRow(gainloss2000[1], NewMarkdown(PlayerGainLossBarNetMethodology2000))
 
 	activePlayersLast3Months := server.ActivePlayersPie()
-	page.AddCharts(activePlayersLast3Months)
+	page.AddRow(activePlayersLast3Months, NewMarkdown(ActivePlayersPieMethodology))
 
-	startStopHeatmap := server.GeneratePlayerStartStopChart()
-	page.AddCharts(startStopHeatmap)
-
-	activePlayersMonthly := server.ActivePlayersMonthly()
-	page.AddCharts(activePlayersMonthly)
+	startStopHeatmap := server.PlayerStartStopChart()
+	page.AddRow(startStopHeatmap, NewMarkdown(PlayerStartStopChartMethodology))
 
 	monthlyBattles := server.MonthlyBattleEstimation()
-	page.AddCharts(monthlyBattles)
+	page.AddRow(monthlyBattles, NewMarkdown(MonthlyBattleEstimationMethodology))
 
-	pieHiddenProfile := server.PieHiddenProfiles()
-	page.AddCharts(pieHiddenProfile)
 
-	pieInClan := server.PieClanProfiles()
-	page.AddCharts(pieInClan)
+	page.AddRow(NewMarkdown("---\n## Player Base Statistics\n---"))
 
-	pieWinRateDist := server.DistributionByWinRate(100)
-	page.AddCharts(pieWinRateDist)
+	pieWinRateDist := server.DistributionByWinRate(1)
+	page.AddRow(pieWinRateDist, NewMarkdown(DistributionByWinRateMethodology))
 
-	pieWinRateDist1000 := server.DistributionByWinRate(1000)
-	page.AddCharts(pieWinRateDist1000)
+	pieWinRateDist200 := server.DistributionByWinRate(200)
+	page.AddRow(pieWinRateDist200, NewMarkdown(DistributionByWinRateMethodology))
+
+	pieWinRateDist2000 := server.DistributionByWinRate(2000)
+	page.AddRow(pieWinRateDist2000, NewMarkdown(PlayerGainLossBarMethodology))
 
 	barWRBattles := server.WinRateByBattles()
-	page.AddCharts(barWRBattles)
+	page.AddRow(barWRBattles, NewMarkdown(WinRateByBattlesMethodology))
 
-	matrix := server.ScatterPlotMatrix()
-	page.AddCharts(matrix)
+	pieHiddenProfile := server.PieHiddenProfiles()
+	page.AddRow(pieHiddenProfile, NewMarkdown(PieHiddenProfilesMethodology))
+
+	pieInClan := server.PieClanProfiles()
+	page.AddRow(pieInClan, NewMarkdown(PieClanProfilesMethodology))
+
+	matrix := server.DivVsSoloWR()
+	page.AddRow(matrix, NewMarkdown(DivVsSoloWRMethodology))
 
 	barBattles := server.BarChartByRandomBattles()
-	page.AddCharts(barBattles)
+	page.AddRow(barBattles, NewMarkdown(BarChartByRandomBattlesMethodology))
+
+	page.AddRow(NewMarkdown("---\n## Problematic Charts\n---"))
+	activePlayersMonthly := server.ActivePlayersMonthly()
+	page.AddRow(activePlayersMonthly, NewMarkdown(ActivePlayersMonthlyMethodology))
+
+	page.AddRow(NewMarkdown("## Other Considerations"))
+	page.AddRow(NewMarkdown(AboutDataCollection))
 
 	f, err := os.OpenFile(server.Output, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -76,7 +86,12 @@ func (server *StatsServer) GenerateReport() {
 		return
 	}
 	defer f.Close()
-	page.Render(f)
+	err = page.Render(f)
+	if err != nil {
+		server.Logger.Errorf("error rendering the report %s", err.Error())
+		return
+	}
+
 	return
 }
 

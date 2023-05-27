@@ -7,7 +7,27 @@ import (
 	"log"
 )
 
-func (server *StatsServer) ScatterPlotMatrix() *charts.Scatter {
+const (
+	DivVsSoloWRMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+func (server *StatsServer) DivVsSoloWR() *charts.Scatter {
 	// Create the scatter plot matrix
 	scatterMatrix := charts.NewScatter()
 

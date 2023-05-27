@@ -8,6 +8,26 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+const (
+	DistributionByWinRateMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
 	// Define the step size for win rate increments
 	step := 0.001

@@ -8,6 +8,26 @@ import (
 	"log"
 )
 
+const (
+	BarChartByRandomBattlesMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) BarChartByRandomBattles() *charts.Bar {
 	// Create the bar chart
 	bar := charts.NewBar()

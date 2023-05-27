@@ -8,6 +8,26 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
+const (
+	WinRateByBattlesMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) WinRateByBattles() *charts.Bar {
 	// Query the average win rate by random battles
 	var results []struct {

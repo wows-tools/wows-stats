@@ -8,6 +8,129 @@ import (
 	"sort"
 )
 
+const (
+	PlayerGainLossBarMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+const (
+	PlayerGainLossBarWithBattlesMethodoloy = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+const (
+	PlayerGainLossBarNetMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+const (
+	PlayerGainLossBarNetWithBattlesMethodoloy = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+
+const (
+	PlayerGainLossBarNetMethodology2000 = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+const (
+	PlayerGainLossBarNetWithBattlesMethodoloy2000 = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+
+
 type dataPlusMinus struct {
 	Plus  int
 	Minus int
@@ -25,7 +148,7 @@ func getSortedKeys(m map[string]*dataPlusMinus) []string {
 	return keys
 }
 
-func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*charts.Bar {
+func (server *StatsServer) PlayerGainLossBar(minBattles int) []*charts.Bar {
 	// Get the player count per month using LastBattleDate
 	var result []struct {
 		Month string
@@ -36,7 +159,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 
 	server.DB.Model(&model.Player{}).
 		Select("strftime('%Y-%m', account_creation_date) AS Month, COUNT(*) AS Count").
-		Where("last_battle_date > '2000-01-01 00:00:00+00:00' AND hidden_profile = 0 AND random_battles > ? AND random_win_rate > ?", minBattles, minWR).
+		Where("last_battle_date > '2000-01-01 00:00:00+00:00' AND hidden_profile = 0 AND random_battles > ?", minBattles).
 		Group("Month").
 		Order("Month").
 		Find(&result)
@@ -51,7 +174,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 
 	server.DB.Model(&model.Player{}).
 		Select("strftime('%Y-%m', last_battle_date) AS Month, COUNT(*) AS Count").
-		Where("last_battle_date > '2000-01-01 00:00:00+00:00' AND hidden_profile = 0 AND random_battles > ? AND random_win_rate > ?", minBattles, minWR).
+		Where("last_battle_date > '2000-01-01 00:00:00+00:00' AND hidden_profile = 0 AND random_battles > ?", minBattles).
 		Group("Month").
 		Order("Month").
 		Find(&result)
@@ -95,7 +218,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 	barGL := charts.NewBar()
 	barGL.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title:    fmt.Sprintf("Player Gain/Loss per Month (players with +%d random battles and +%.1f%% WR)", minBattles, minWR*100),
+			Title:    fmt.Sprintf("Player Gain/Loss per Month (players with +%d random battles)", minBattles),
 			Subtitle: "Based on account creation date & last battle date (ignoring last 2 months)",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
@@ -120,7 +243,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int, minWR float64) []*c
 	barNet := charts.NewBar()
 	barNet.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title:    fmt.Sprintf("Player Net Gain/Loss per Month (players with +%d random battles and +%.3f%% WR)", minBattles, minWR*100),
+			Title:    fmt.Sprintf("Player Net Gain/Loss per Month (players with +%d random battles)", minBattles),
 			Subtitle: "Based on account creation date & last battle date (ignoring last 2 months)",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{

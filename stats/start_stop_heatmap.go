@@ -8,7 +8,27 @@ import (
 	"sort"
 )
 
-func (server *StatsServer) GeneratePlayerStartStopChart() *charts.Bar3D {
+const (
+	PlayerStartStopChartMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
+func (server *StatsServer) PlayerStartStopChart() *charts.Bar3D {
 	// Query the players' start and stop months
 	var results []struct {
 		StartMonth  string

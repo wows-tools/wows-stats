@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/russross/blackfriday"
 	tpls "github.com/wows-tools/wows-stats/templates"
 )
 
@@ -71,13 +72,19 @@ func (r *pageRender) Render(w io.Writer) error {
 	return err
 }
 
+func markDowner(args ...interface{}) template.HTML {
+	s := blackfriday.MarkdownCommon([]byte(fmt.Sprintf("%s", args...)))
+	return template.HTML(s)
+}
+
 // MustTemplate creates a new template with the given name and parsed contents.
 func MustTemplate(name string, contents []string) *template.Template {
 	tpl := template.Must(template.New(name).Parse(contents[0])).Funcs(template.FuncMap{
 		"safeJS": func(s interface{}) template.JS {
 			return template.JS(fmt.Sprint(s))
 		},
-		"isSet": isSet,
+		"isSet":    isSet,
+		"markDown": markDowner,
 	})
 
 	for _, cont := range contents[1:] {
@@ -108,8 +115,8 @@ type Page struct {
 	opts.Initialization
 	opts.Assets
 
-	Charts []interface{}
-	Layout Layout
+	ChartRows [][]interface{}
+	Layout    Layout
 }
 
 // NewPage creates a new page.
@@ -128,19 +135,28 @@ func (page *Page) SetLayout(layout Layout) *Page {
 }
 
 // AddCharts adds new charts to the page.
-func (page *Page) AddCharts(charts ...Charter) *Page {
+func (page *Page) AddRow(charts ...Charter) *Page {
+	var row []interface{}
 	for i := 0; i < len(charts); i++ {
-		assets := charts[i].GetAssets()
-		for _, v := range assets.JSAssets.Values {
-			page.JSAssets.Add(v)
+		switch charts[i].Type() {
+		case "markdown":
+			charts[i].FillDefaultValues()
+			row = append(row, charts[i])
+		default:
+			assets := charts[i].GetAssets()
+			for _, v := range assets.JSAssets.Values {
+				page.JSAssets.Add(v)
+			}
+
+			for _, v := range assets.CSSAssets.Values {
+				page.CSSAssets.Add(v)
+			}
+			charts[i].Validate()
+			row = append(row, charts[i])
 		}
 
-		for _, v := range assets.CSSAssets.Values {
-			page.CSSAssets.Add(v)
-		}
-		charts[i].Validate()
-		page.Charts = append(page.Charts, charts[i])
 	}
+	page.ChartRows = append(page.ChartRows, row)
 	return page
 }
 
@@ -148,4 +164,21 @@ func (page *Page) AddCharts(charts ...Charter) *Page {
 func (page *Page) Validate() {
 	page.Initialization.Validate()
 	page.Assets.Validate(page.AssetsHost)
+}
+
+type Markdown struct {
+	MDText string
+}
+
+func (Markdown) Type() string { return "markdown" }
+
+// no need for these functions
+func (Markdown) GetAssets() opts.Assets { return opts.Assets{} }
+func (md Markdown) FillDefaultValues()  { return }
+func (Markdown) Validate()              { return }
+
+func NewMarkdown(text string) Markdown {
+	return Markdown{
+		MDText: text,
+	}
 }

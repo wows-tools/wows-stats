@@ -5,6 +5,26 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
+const (
+	PieHiddenProfilesMethodology = `
+### Description
+
+TODO
+
+### Code
+
+TODO
+
+### Methodology
+
+TODO
+
+### Caveats
+
+TODO
+`
+)
+
 func (server *StatsServer) PieHiddenProfiles() *charts.Pie {
 	// Get the number of players with hidden profiles
 	hiddenProfileCount, _ := server.getPlayerCountByProfile(true)
