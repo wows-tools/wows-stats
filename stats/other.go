@@ -44,4 +44,9 @@ This project is on going and still early on. New charts will be added, problemat
 
 This project will also improve over time by having a data history. One of its big flaw currently is the lack of historic data, which leads to numerous approximations. With historic data, these approximations will partially disappear over time.
 `
+	SeePrevious = `
+### Description
+
+See Previous chart description
+`
 )

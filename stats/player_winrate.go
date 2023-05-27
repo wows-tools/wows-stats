@@ -12,25 +12,63 @@ const (
 	DistributionByWinRateMethodology = `
 ### Description
 
-TODO
+The blue curve in the graph represents the distribution of players based on their win rate, considering only players who have reached a minimum number of battles.
+
+Each point (x, y) on the graph represents the following:
+
+- **x**: The win rate range of the players.
+- **y**: The number of players whose win rate falls between x and x + "step".
+
+The green curve represents the [Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution), which is obtained using the population's average win rate and its standard deviation.
+
+The graph's subtitle displays the following information:
+
+* Mean: The average win rate of the player population.
+* Standard Deviation: The measure of the spread or dispersion of win rates within the population.
+* Population Size: The total number of players considered in the analysis.
+* Step: The interval used for dividing win rates into ranges.
+
+By visualizing this graph, you can observe the distribution of players' win rates and compare it to the expected Normal Distribution based on the population's average win rate and standard deviation.
 
 ### Code
 
-TODO
+[/stats/player_winrate.go](https://github.com/wows-tools/wows-stats/blob/main/stats/player_winrate.go)
 
 ### Methodology
 
-TODO
+Take all the intervals (wr-1, wr-2) of length "step" between 0% and 100%.
+
+For each interval, count the number of players with a win rate between wr-1 and wr-2.
+
+From this, compute the Normal Distribution and we display the 2 curves.
 
 ### Caveats
 
-TODO
+#### Spikiness
+
+Due to a large number of players having a low battle count, the distribution of Win Rates is not evenly spread.
+
+For instance, if many players have only 4 battles, the graph will show spikes at 0% (0/4), 25% (1/4), 50% (2/4), 75% (3/4), and 100% (4/4) win rates.
+
+As a result, when considering low minimum battle thresholds, the charts may appear "spiky" around these win rate values.
+
+To partially compensate for this effect, wider steps are used in the charts with lower battle thresholds. This helps to smooth out the spikes and provide a clearer representation of the distribution.
+
+With higher minimum battle thresholds, this issue disappears.
+
+#### Other
+
+Keep in mind it's a simple player distribution.
+
+As it's more likely to encounter a frequent player with 2000, 5000 or +10000 battles, specially at high tiers, this chart doesn't reflect what your MM looks like.
+
+This is especially true for the chart using the lowest threshold (1 battle) as it contains all the players trying the game for a few battles and leaving after that (not to mention protected MM bellow 200 battles).
 `
 )
 
-func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
-	// Define the step size for win rate increments
-	step := 0.001
+// minBattles: Minimum number of battles
+// step: size for win rate increments
+func (server *StatsServer) DistributionByWinRate(minBattles int, step float64) *charts.Line {
 
 	// Define the win rate ranges and counts
 	winRateRanges := make([]string, 0)
@@ -38,10 +76,10 @@ func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
 	counts := make([]opts.LineData, 0)
 
 	// Iterate over win rate ranges with the specified step size
-	start := 0.1
+	start := 0.0
 	end := start + step
 	population := 0.0
-	for end <= 0.9 {
+	for end <= 1 {
 		// Get the count of players within the win rate range, excluding those with hidden profiles and below the minimum battles criteria
 		winRateCount, _ := server.getPlayerCountByWinRate(start, end, minBattles)
 
@@ -65,7 +103,7 @@ func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
 			Title:    generateChartTitle(minBattles),
-			Subtitle: fmt.Sprintf("Mean: %.5f, StdDev: %.5f, Pop: %d, Steps: 0.1%%", mean, stdDev, int(population)),
+			Subtitle: fmt.Sprintf("Mean: %.5f, Std Dev: %.5f, Pop: %d, Step: %f%%", mean, stdDev, int(population), step),
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    true,
@@ -81,7 +119,7 @@ func (server *StatsServer) DistributionByWinRate(minBattles int) *charts.Line {
 		AddSeries("Player Distribution", counts)
 
 	// Add the normal distribution series to the line chart
-	normalDist := generateNormalDistributionSeries(population, mean, stdDev, winRateRangeValues)
+	normalDist := generateNormalDistributionSeries(population, mean, stdDev, winRateRangeValues, step)
 	line.AddSeries("Normal Distribution", normalDist)
 
 	return line
@@ -99,7 +137,7 @@ func computeNormalDistribution(winRateRanges []float64, counts []opts.LineData) 
 	return mean, stdDev
 }
 
-func generateNormalDistributionSeries(population, mean, stdDev float64, xLabels []float64) []opts.LineData {
+func generateNormalDistributionSeries(population, mean, stdDev float64, xLabels []float64, step float64) []opts.LineData {
 	dist := distuv.Normal{
 		Mu:    mean,
 		Sigma: stdDev,
@@ -107,7 +145,8 @@ func generateNormalDistributionSeries(population, mean, stdDev float64, xLabels 
 	y := make([]opts.LineData, len(xLabels))
 	for i, x := range xLabels {
 		prob := dist.Prob(x)
-		y[i] = opts.LineData{Value: prob * population / 1000.0}
+		step_count := 1 / step
+		y[i] = opts.LineData{Value: prob * population / step_count}
 	}
 	return y
 }
