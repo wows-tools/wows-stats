@@ -11,19 +11,33 @@ const (
 	MonthlyBattleEstimationMethodology = `
 ### Description
 
-TODO
+**Estimation** of the number of random battles per month.
 
 ### Code
 
-TODO
+[/stats/average_monthly_battles.go](https://github.com/wows-tools/wows-stats/blob/main/stats/average_monthly_battles.go)
 
 ### Methodology
 
-TODO
+This chart is computed as follows:
+
+1. Create a counter for each month
+2. For each player:
+   - compute the average number of random battles per day between the account creation and the last battle
+   - each month between the account creation and the last battle, increment the counter by day_in_month * average_battle_per_day for this player (for the month of account creation and last battle, only the appropriate portion of the month is taken).
+3. Plot the month counters on the chart.
 
 ### Caveats
 
-TODO
+It's important to consider the following caveats when interpreting the chart:
+
+* This method provides an estimation and does not rely on actual historic data.
+* The estimation assumes an even distribution of battles for each player, whereas players may not play at a constant rate.
+* The estimation may under-estimate the number of battles in the most recent months.
+* The estimation does not account for players who may have created their account and remained inactive for months or years before actively playing (old WoT players for example).
+* This chart appears to be less inaccurate than the "Estimated Active Players Each Month" chart, but further verification is required.
+
+Please keep these caveats in mind when analyzing the chart, as it provides only an estimate and may not reflect the actual distribution of battles.
 `
 )
 
