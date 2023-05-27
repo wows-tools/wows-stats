@@ -10,19 +10,22 @@ const (
 	ActivePlayersPieMethodology = `
 ### Description
 
-TODO
+Ratio between players who have played in the last 3 months or not.
 
 ### Code
 
-TODO
+[stats/active_players.go](https://github.com/wows-tools/wows-stats/blob/main/stats/active_players.go)
 
 ### Methodology
 
-TODO
+* count the number of players with 'last battle date' >= 'current_date() - 3 months'
+* count the number of players with 'last battle date' < 'current_date() - 3 months'
+
+Display a pie chart with the 2 values and their respective ratio.
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 
