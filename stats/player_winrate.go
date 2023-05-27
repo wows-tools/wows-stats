@@ -36,11 +36,9 @@ By visualizing this graph, you can observe the distribution of players' win rate
 
 ### Methodology
 
-Take all the intervals (wr-1, wr-2) of length "step" between 0% and 100%.
-
-For each interval, count the number of players with a win rate between wr-1 and wr-2.
-
-From this, compute the Normal Distribution and we display the 2 curves.
+* Take all the intervals (wr-1, wr-2) of length "step" between 0% and 100% (e.g. 50.5% -> 51.0%).
+* For each interval, count the number of players with a win rate between wr-1 and wr-2.
+* From this, compute the Normal Distribution and we display the 2 curves.
 
 ### Caveats
 
@@ -49,9 +47,7 @@ From this, compute the Normal Distribution and we display the 2 curves.
 Due to a large number of players having a low battle count, the distribution of Win Rates is not evenly spread.
 
 For instance, if many players have only 4 battles, the graph will show spikes at 0% (0/4), 25% (1/4), 50% (2/4), 75% (3/4), and 100% (4/4) win rates.
-
 As a result, when considering low minimum battle thresholds, the charts may appear "spiky" around these win rate values.
-
 To partially compensate for this effect, wider steps are used in the charts with lower battle thresholds. This helps to smooth out the spikes and provide a clearer representation of the distribution.
 
 With higher minimum battle thresholds, this issue disappears.
