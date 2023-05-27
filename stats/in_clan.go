@@ -9,7 +9,7 @@ const (
 	PieClanProfilesMethodology = `
 ### Description
 
-TODO
+Proportion of players with and without clan.
 
 ### Code
 
