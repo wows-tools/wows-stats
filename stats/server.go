@@ -78,7 +78,7 @@ func (server *StatsServer) GenerateReport() {
 	page.AddRow(activePlayersMonthly, NewMarkdown(ActivePlayersMonthlyMethodology))
 
 	page.AddRow(NewMarkdown("## Other Considerations"))
-	page.AddRow(NewMarkdown(AboutDataCollection))
+	page.AddRow(NewMarkdown(OtherNotes))
 
 	f, err := os.OpenFile(server.Output, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
