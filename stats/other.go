@@ -38,6 +38,19 @@ Please note that running the complete data collection process for each server ta
 
 This project collects data and generate the present report once per month, toward the end of the month.
 
+## About the CIS -> EU migration
+
+Apparently, accounts which were migration from CIS to EU where migrated in full, including account creation date.
+
+This means that charts related to accounts on the EU server are actually:
+
+* EU + migrated portion of CIS before September 2022
+* EU alone after September 2022 (with the influx of CIS players)
+
+This is why no spikes are visible around that time.
+
+Clans were recreated fresh however.
+
 ## Final Notes
 
 This project is on going and still early on. New charts will be added, problematic charts will be deleted and existing charts tweaked/improved.
