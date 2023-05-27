@@ -27,7 +27,8 @@ This chart uses a [logarithmic scale](https://en.wikipedia.org/wiki/Logarithmic_
 ### Methodology
 
 Here is how this graph is computed
-* Select all player
+
+* Select all players
 * trim account creation date to "Year-Month" to get "start_month"
 * trim last battle date to "Year-Month" to get "stop_month"
 * group players by (start_month, stop_month)
