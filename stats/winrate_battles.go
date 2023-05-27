@@ -16,7 +16,7 @@ Displays the average Win Rate by battle count (steps of 500 battles)
 
 ### Code
 
-[stats/winrate_battles.go][https://github.com/wows-tools/wows-stats/blob/main/stats/winrate_battles.go]
+[stats/winrate_battles.go](https://github.com/wows-tools/wows-stats/blob/main/stats/winrate_battles.go)
 
 ### Methodology
 
