@@ -13,15 +13,17 @@ TODO
 
 ### Code
 
-TODO
+[stats/in_clan.go](https://github.com/wows-tools/wows-stats/blob/main/stats/in_clan.go)
 
 ### Methodology
 
-TODO
+* Count players in clans (clan_id not equal 0)
+* Count players without clans
+* Plot
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 

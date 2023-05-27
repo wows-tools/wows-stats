@@ -11,19 +11,32 @@ const (
 	DivVsSoloWRMethodology = `
 ### Description
 
-TODO
+Plot a random sample (5000 entries) of players by "solo+div win rate" x "div win rate".
+
+Each blue dot is a player, with the following coordinates:
+
+* **x**: Random Win Rate
+* **y**: Division Win Rate
+
+The green line represent "win rate" = "div win rate".
+
+If a player's dot is above this line, the player has a better division win rate.
+
+If a player's dot is bellow this line, the player win rate than division win rate.
+
 
 ### Code
 
-TODO
+[/stats/matrix_div_wr.go](https://github.com/wows-tools/wows-stats/blob/main/stats/matrix_div_wr.go)
 
 ### Methodology
 
-TODO
+* Select a random sample of players with at least 100 random battles and 100 division random battles.
+* Plot them on a scatter chart
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 
