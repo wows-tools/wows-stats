@@ -28,7 +28,7 @@ This graph is problematic, counting a player "active" only based on _account cre
 
 It over-estimates the number of active players, making for a misleading graph.
 
-This chart **will be removed** and replaced with actual historical data in the future.
+This chart **will be removed**.
 `
 )
 

@@ -109,7 +109,7 @@ On average a player plays ~1 battle per day (between account creation and last b
 
 This means "gains" are under-estimated
 
-This graph **will be removed**.
+This chart **will be removed**.
 
 This graph might get replaced an estimation based on the battle per day distribution.
 `
@@ -141,7 +141,7 @@ Same as before, but worse, here we under-estimate account creations and over-est
 
 This double approximation renders this chart far too approximative.
 
-This graph **will be removed**.
+This chart **will be removed**.
 `
 )
 
@@ -270,7 +270,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int) []*charts.Bar {
 	}
 	titleBoth := "Player Account Creations Vs Player Count by Last Battle each Month"
 	if minBattles != 0 {
-		titleBoth = titleBoth + fmt.Sprintf(" (players with +%d random battles)", minBattles)
+		titleBoth = titleBoth + fmt.Sprintf(" (+%d random battles)", minBattles)
 	}
 
 	barGL := charts.NewBar()
@@ -300,7 +300,7 @@ func (server *StatsServer) PlayerGainLossBar(minBattles int) []*charts.Bar {
 		)
 	titleNet := "Player Account Creations Minus Player Count by Last Battle each Month"
 	if minBattles != 0 {
-		titleNet = titleNet + fmt.Sprintf(" (players with +%d random battles)", minBattles)
+		titleNet = titleNet + fmt.Sprintf(" (+%d random battles)", minBattles)
 	}
 
 	barNet := charts.NewBar()

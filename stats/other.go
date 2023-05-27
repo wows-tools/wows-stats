@@ -42,7 +42,9 @@ This project collects data and generate the present report once per month, towar
 
 This project is on going and still early on. New charts will be added, problematic charts will be deleted and existing charts tweaked/improved.
 
-This project will also improve over time by having a data history. One of its big flaw currently is the lack of historic data, which leads to numerous approximations. With historic data, these approximations will partially disappear over time.
+This project will also improve over time by having a data history. One of its big flaw currently is the lack of historic data, which leads to numerous approximations.
+
+With historic data, these approximations will partially disappear over time.
 `
 	SeePrevious = `
 ### Description

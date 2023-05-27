@@ -103,7 +103,7 @@ func (server *StatsServer) DistributionByWinRate(minBattles int, step float64) *
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
 			Title:    generateChartTitle(minBattles),
-			Subtitle: fmt.Sprintf("Mean: %.5f, Std Dev: %.5f, Pop: %d, Step: %f%%", mean, stdDev, int(population), step),
+			Subtitle: fmt.Sprintf("Mean: %.5f, Std Dev: %.5f, Pop: %d, Step: %.1f%%", mean, stdDev, int(population), step * 100),
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    true,

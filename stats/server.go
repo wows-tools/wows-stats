@@ -3,6 +3,7 @@ package stats
 import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"strings"
 	"os"
 )
 
@@ -19,11 +20,21 @@ func (server *StatsServer) GenerateReport() {
 
 	// Create a FlexLayout component
 	page.SetLayout(PageFlexLayout)
-	page.Initialization.PageTitle = "WoWs Stats (" + server.Realm + ")"
+	page.Initialization.PageTitle = "WoWs Stats (" + strings.ToUpper(server.Realm) + ")"
 
-	page.AddRow(NewMarkdown("# Statitics for the **" + server.Realm + "** server"))
+	page.AddRow(NewMarkdown("# Statitics for the **" + strings.ToUpper(server.Realm) + "** server"))
 
 	page.AddRow(NewMarkdown("___\n## Server Activity Statistics"))
+
+	page.AddRow(NewMarkdown("---"))
+
+	activePlayersLast3Months := server.ActivePlayersPie()
+	page.AddRow(activePlayersLast3Months, NewMarkdown(ActivePlayersPieMethodology))
+
+	page.AddRow(NewMarkdown("---"))
+	startStopHeatmap := server.PlayerStartStopChart()
+	page.AddRow(startStopHeatmap, NewMarkdown(PlayerStartStopChartMethodology))
+
 	gainloss := server.PlayerGainLossBar(0)
 
 	page.AddRow(NewMarkdown("---"))
@@ -31,14 +42,6 @@ func (server *StatsServer) GenerateReport() {
 
 	page.AddRow(NewMarkdown("---"))
 	page.AddRow(gainloss[1], NewMarkdown(PlayerGainLossBarNetMethodology))
-
-	page.AddRow(NewMarkdown("---"))
-	activePlayersLast3Months := server.ActivePlayersPie()
-	page.AddRow(activePlayersLast3Months, NewMarkdown(ActivePlayersPieMethodology))
-
-	page.AddRow(NewMarkdown("---"))
-	startStopHeatmap := server.PlayerStartStopChart()
-	page.AddRow(startStopHeatmap, NewMarkdown(PlayerStartStopChartMethodology))
 
 	page.AddRow(NewMarkdown("---"))
 	monthlyBattles := server.MonthlyBattleEstimation()
