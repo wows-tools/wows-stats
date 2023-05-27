@@ -88,7 +88,7 @@ func (server *StatsServer) GenerateReport() {
 	gainloss200 := server.PlayerGainLossBar(200)
 
 	page.AddRow(NewMarkdown("---"))
-	page.AddRow(gainloss200[0], NewMarkdown(PlayerGainLossBarNetMethodology))
+	page.AddRow(gainloss200[0], NewMarkdown(PlayerGainLossBarWithBattlesMethodoloy))
 
 	page.AddRow(NewMarkdown("---"))
 	page.AddRow(gainloss200[1], NewMarkdown(PlayerGainLossBarNetWithBattlesMethodoloy))
@@ -96,10 +96,10 @@ func (server *StatsServer) GenerateReport() {
 	gainloss2000 := server.PlayerGainLossBar(2000)
 
 	page.AddRow(NewMarkdown("---"))
-	page.AddRow(gainloss2000[0], NewMarkdown(PlayerGainLossBarNetWithBattlesMethodoloy))
+	page.AddRow(gainloss2000[0], NewMarkdown(SeePrevious))
 
 	page.AddRow(NewMarkdown("---"))
-	page.AddRow(gainloss2000[1], NewMarkdown(PlayerGainLossBarNetMethodology2000))
+	page.AddRow(gainloss2000[1], NewMarkdown(SeePrevious))
 
 	page.AddRow(NewMarkdown("___\n## Other Considerations\n___"))
 	page.AddRow(NewMarkdown(OtherNotes))

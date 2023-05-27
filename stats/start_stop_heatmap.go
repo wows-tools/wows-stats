@@ -12,19 +12,31 @@ const (
 	PlayerStartStopChartMethodology = `
 ### Description
 
-TODO
+This chart represent on x,y,z axis:
+
+* **x**: Month of Account creation
+* **y**: Month of Last Battle
+* **x**: Number of players who have created their account month **x** and played their last battle month **y**
+
+This chart uses a [logarithmic scale](https://en.wikipedia.org/wiki/Logarithmic_scale). The high number of players playing just for one or two months makes it necessary.
 
 ### Code
 
-TODO
+[/start_stop_heatmap.go](https://github.com/wows-tools/wows-stats/blob/main/stats/start_stop_heatmap.go)
 
 ### Methodology
 
-TODO
+Here is how this graph is computed
+* Select all player
+* trim account creation date to "Year-Month" to get "start_month"
+* trim last battle date to "Year-Month" to get "stop_month"
+* group players by (start_month, stop_month)
+* for each (start_month, stop_month) pair, compute the number of players
+* display the result in a 3D Bar graph (using log scale)
 
 ### Caveats
 
-TODO
+Last Battle date must not be misinterpreted for "player left game" date, specially for the most recent months.
 `
 )
 
