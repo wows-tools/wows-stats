@@ -12,19 +12,23 @@ const (
 	BarChartByRandomBattlesMethodology = `
 ### Description
 
-TODO
+Count the number of players by number of battles (range of 500).
+
+This chart uses a [logarithmic scale](https://en.wikipedia.org/wiki/Logarithmic_scale).
 
 ### Code
 
-TODO
+[/stats/player_random_battle_chart.go](https://github.com/wows-tools/wows-stats/blob/main/stats/player_random_battle_chart.go)
 
 ### Methodology
 
-TODO
+* Divide the number of random battles of each player by 500 (Integer Division)
+* Group players by this value, and compute the number of players for each Group
+* Plot the chart
 
 ### Caveats
 
-TODO
+None identified.
 `
 )
 
