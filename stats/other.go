@@ -62,6 +62,6 @@ With historic data, these approximations will partially disappear over time.
 	SeePrevious = `
 ### Description
 
-See Previous chart description
+See Previous chart(s) description.
 `
 )
