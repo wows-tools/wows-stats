@@ -61,7 +61,7 @@ func main() {
 	}
 	defer logger.Sync()
 	glogger := zapgorm2.New(logger)
-	glogger.SlowThreshold = time.Millisecond
+	glogger.SlowThreshold = time.Millisecond * 10000
 	sugar := logger.Sugar()
 	mainLogger := sugar.With("component", "main")
 
