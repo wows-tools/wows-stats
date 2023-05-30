@@ -80,8 +80,9 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
         client := pester.New()
         client.Concurrency = 10
         client.MaxRetries = 5
+        client.Timeout = 10 * time.Second
         client.Backoff = pester.ExponentialBackoff
-        client.KeepLog = true
+        client.KeepLog = false
 
 	return &Backend{
 		client:      wargaming.NewClient(key, &wargaming.ClientOptions{client}),
