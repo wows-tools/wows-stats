@@ -24,7 +24,7 @@ var (
 var (
 	ErrShipReturnInvalid = errors.New("Invalid return size for ship listing")
 	ErrUnknownRealm      = errors.New("Unknown Wows realm/server")
-	prefixOrder          = "0123456789abcdefghijklmnopqrstuvwxyz_"
+	prefixOrder          = "0123456789_abcdefghijklmnopqrstuvwxyz"
 	pageSize             = 100
 )
 
