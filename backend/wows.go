@@ -3,14 +3,14 @@ package backend
 import (
 	"context"
 	"errors"
-	"github.com/IceflowRE/go-wargaming/v4/wargaming"
-	"github.com/IceflowRE/go-wargaming/v4/wargaming/wows"
+	"github.com/wows-tools/wows-stats/wargaming"
+	"github.com/wows-tools/wows-stats/wargaming/wows"
 	"github.com/wows-tools/wows-stats/model"
+	"github.com/sethgrid/pester"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -75,8 +75,16 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
 	if err != nil {
 		return nil
 	}
+
+
+        client := pester.New()
+        client.Concurrency = 10
+        client.MaxRetries = 5
+        client.Backoff = pester.ExponentialBackoff
+        client.KeepLog = true
+
 	return &Backend{
-		client:      wargaming.NewClient(key, &wargaming.ClientOptions{HTTPClient: &http.Client{Timeout: 10 * time.Second}}),
+		client:      wargaming.NewClient(key, &wargaming.ClientOptions{client}),
 		ShipMapping: make(map[int]int),
 		Realm:       wReam,
 		Logger:      logger,
