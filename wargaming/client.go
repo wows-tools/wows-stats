@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/wows-tools/wows-stats/pester"
 	"io"
 	"net/http"
-        "github.com/sethgrid/pester"
 	"net/url"
 )
 
