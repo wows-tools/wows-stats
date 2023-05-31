@@ -8,7 +8,7 @@ import (
 	"github.com/wows-tools/wows-stats/stats"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"moul.io/zapgorm2"
 	"os"
