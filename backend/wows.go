@@ -3,10 +3,11 @@ package backend
 import (
 	"context"
 	"errors"
+	"github.com/alitto/pond"
+	"github.com/wows-tools/wows-stats/model"
+	"github.com/wows-tools/wows-stats/pester"
 	"github.com/wows-tools/wows-stats/wargaming"
 	"github.com/wows-tools/wows-stats/wargaming/wows"
-	"github.com/wows-tools/wows-stats/model"
-	"github.com/sethgrid/pester"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 	"gorm.io/gorm"
@@ -23,6 +24,7 @@ var (
 
 var (
 	ErrShipReturnInvalid = errors.New("Invalid return size for ship listing")
+	ErrWrongLengthPrefix = errors.New("The search should use a 3 letters prefix")
 	ErrUnknownRealm      = errors.New("Unknown Wows realm/server")
 	prefixOrder          = "0123456789_abcdefghijklmnopqrstuvwxyz"
 	pageSize             = 100
@@ -42,11 +44,12 @@ func WowsRealm(realmStr string) (wargaming.Realm, error) {
 }
 
 type Backend struct {
-	client      *wargaming.Client
-	ShipMapping map[int]int
-	Realm       wargaming.Realm
-	Logger      *zap.SugaredLogger
-	DB          *gorm.DB
+	client         *wargaming.Client
+	ShipMapping    map[int]int
+	Realm          wargaming.Realm
+	Logger         *zap.SugaredLogger
+	DB             *gorm.DB
+	APICallCounter int
 }
 
 func min[T constraints.Ordered](a, b T) T {
@@ -70,27 +73,31 @@ func difference(a, b []*model.Player) []*model.Player {
 	return diff
 }
 
+func (backend *Backend) pesterLogger(e pester.ErrEntry) {
+	backend.Logger.Infof("%d %s [%s] %s request-%d retry-%d error: %s\n", e.Time.Unix(), e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
+}
+
 func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB) *Backend {
 	wReam, err := WowsRealm(realm)
 	if err != nil {
 		return nil
 	}
 
+	client := pester.New()
+	client.MaxRetries = 5
+	client.Timeout = 10 * time.Second
+	client.Backoff = pester.ExponentialJitterBackoff
+	client.SetRetryOnHTTP429(true)
 
-        client := pester.New()
-        client.Concurrency = 10
-        client.MaxRetries = 5
-        client.Timeout = 10 * time.Second
-        client.Backoff = pester.ExponentialBackoff
-        client.KeepLog = false
-
-	return &Backend{
+	backend := &Backend{
 		client:      wargaming.NewClient(key, &wargaming.ClientOptions{client}),
 		ShipMapping: make(map[int]int),
 		Realm:       wReam,
 		Logger:      logger,
 		DB:          db,
 	}
+	client.LogHook = backend.pesterLogger
+	return backend
 }
 
 func (backend *Backend) FillShipMapping() error {
@@ -564,11 +571,29 @@ func (backend *Backend) ScrapAll() (err error) {
 }
 
 func (backend *Backend) ScanAllPlayers() (err error) {
-	backend.Logger.Infof("Start scanning all players")
 	prefix := "000"
+	backend.Logger.Infof("Start scanning all players")
+	pool := pond.New(10, 10, pond.MinWorkers(10))
+	for {
+		pool.Submit(func() { backend.ScanAllPlayersTrigram(prefix) })
+		prefix = backend.getNextPrefix(prefix, false, prefix)
+		if prefix == "000" {
+			break
+		}
+	}
+	pool.StopAndWait()
+	backend.Logger.Infof("Finish scanning all players")
+	return nil
+}
+
+func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string) (err error) {
+	if len(startingTrigramPrefix) != 3 {
+		return ErrWrongLengthPrefix
+	}
 	trigramPrefixAll := len(prefixOrder) * len(prefixOrder) * len(prefixOrder)
 	trigramPrefixCount := 0
 	apiCallCount := 0
+	prefix := startingTrigramPrefix
 
 	for {
 		client := backend.client
@@ -599,18 +624,10 @@ func (backend *Backend) ScanAllPlayers() (err error) {
 		} else {
 			lastNick = prefix
 		}
-		// TODO compare old and new trigram prefix part to count trigrams
 		prefix = backend.getNextPrefix(prefix, morePrecisionRequired, lastNick)
 
-		// FIXME, we actually have a few trigrams that never pops as trigrams
-		if len(prefix) == 3 {
-			trigramPrefixCount++
-		}
-
-		// If we got all the trigram prefixes, we can stop
-		// FIXME, we actually have a few trigrams that never pops as trigrams
-		// So we overscan slightly
-		if trigramPrefixCount > trigramPrefixAll {
+		// If the next prefix has a different starting Trigram, it's time to stop
+		if prefix[0:3] != startingTrigramPrefix {
 			break
 		}
 		// Every 100 API call, log progress
@@ -618,6 +635,5 @@ func (backend *Backend) ScanAllPlayers() (err error) {
 			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", trigramPrefixCount, trigramPrefixAll, apiCallCount, prefix)
 		}
 	}
-	backend.Logger.Infof("Finish scanning all players")
 	return nil
 }

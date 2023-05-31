@@ -22,6 +22,7 @@ go.work
 
 wows-stats
 *-stats.db
+*-stats.db-journal
 wows-stats.db-journal
 *.swp
 *.html
