@@ -573,7 +573,7 @@ func (backend *Backend) ScrapAll() (err error) {
 }
 
 func (backend *Backend) ScanAllPlayers() (err error) {
-	prefix := "aaa"
+	prefix := "000"
 	apiCallCount := 0
 	trigramPrefixCount := 0
 	backend.Logger.Infof("Start scanning all players")
