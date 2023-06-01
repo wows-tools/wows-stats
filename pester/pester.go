@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/time/rate"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -55,9 +56,11 @@ type Client struct {
 	// wrap it to provide access to http built ins
 	hc *http.Client
 
-	Transport     http.RoundTripper
-	CheckRedirect func(req *http.Request, via []*http.Request) error
-	Timeout       time.Duration
+	transport     http.RoundTripper
+	checkRedirect func(req *http.Request, via []*http.Request) error
+	timeout       time.Duration
+	jar           http.CookieJar
+	Ratelimiter   *rate.Limiter
 
 	// pester specific
 	MaxRetries     int
@@ -104,9 +107,7 @@ type params struct {
 
 var random *rand.Rand
 
-func init() {
-	random = rand.New(rand.NewSource(time.Now().UnixNano()))
-}
+var DefaultClient = &Client{MaxRetries: 3, Backoff: DefaultBackoff, ErrLog: []ErrEntry{}}
 
 // New constructs a new DefaultClient with sensible default values
 func New() *Client {
@@ -119,12 +120,20 @@ func New() *Client {
 	}
 }
 
-// NewExtendedClient allows you to pass in an http.Client that is previously set up
-// and extends it to have Pester's features of concurrency and retries.
-func NewExtendedClient(hc *http.Client) *Client {
-	c := New()
-	c.hc = hc
-	return c
+func (c *Client) SetCheckRedirect(checkRedirect func(req *http.Request, via []*http.Request) error) {
+	c.hc.CheckRedirect = checkRedirect
+}
+
+func (c *Client) SetTimeout(timeout time.Duration) {
+	c.hc.Timeout = timeout
+}
+
+func (c *Client) SetJar(jar http.CookieJar) {
+	c.hc.Jar = jar
+}
+
+func (c *Client) SetTransport(transport http.RoundTripper) {
+	c.hc.Transport = transport
 }
 
 // LogHook is used to log attempts as they happen. This function is never called,
@@ -136,9 +145,6 @@ type ContextLogHook func(ctx context.Context, e ErrEntry)
 
 // BackoffStrategy is used to determine how long a retry request should wait until attempted
 type BackoffStrategy func(retry int) time.Duration
-
-// DefaultClient provides sensible defaults
-var DefaultClient = &Client{MaxRetries: 3, Backoff: DefaultBackoff, ErrLog: []ErrEntry{}}
 
 // DefaultBackoff always returns 1 second
 func DefaultBackoff(_ int) time.Duration {
@@ -165,6 +171,10 @@ func LinearBackoff(i int) time.Duration {
 // with +/- 0-33% to prevent sychronized reuqests.
 func LinearJitterBackoff(i int) time.Duration {
 	return jitter(i)
+}
+
+func init() {
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // jitter keeps the +/- 0-33% logic in one place
@@ -250,11 +260,14 @@ func (c *Client) pester(p params) (*http.Response, error) {
 
 	var resp *http.Response
 	for i := 1; i <= AttemptLimit; i++ {
+		if c.Ratelimiter != nil {
+			c.Ratelimiter.Wait(request.Context())
+		}
 		resp, err := c.hc.Do(request)
 
 		// WG API is weird, in case we exceed the API rate (10 req/s), it returns 200 instead of a 429 error
 		// So we need to parse the body, and check the error code in the json payload
-		wgResp := wgResponse{Status: "ok"}
+		wgResp := wgResponse{}
 		if err == nil {
 			respBytes, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -300,14 +313,15 @@ func (c *Client) pester(p params) (*http.Response, error) {
 
 // Format the Error to human readable string
 func (c *Client) FormatError(e ErrEntry) string {
-	return fmt.Sprintf("%d %s [%s] %s request-%d retry-%d error: %s\n",
-		e.Time.Unix(), e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
-}
+	if e.Err == nil {
+		return fmt.Sprintf("%d %s [%s] %s request-%d retry-%d",
+			e.Time.Unix(), e.Method, e.Verb, e.URL, e.Request, e.Retry)
 
-// EmbedHTTPClient allows you to extend an existing Pester client with an
-// underlying http.Client, such as https://godoc.org/golang.org/x/oauth2/google#DefaultClient
-func (c *Client) EmbedHTTPClient(hc *http.Client) {
-	c.hc = hc
+	} else {
+		return fmt.Sprintf("%d %s [%s] %s request-%d retry-%d error: %s\n",
+			e.Time.Unix(), e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
+
+	}
 }
 
 func (c *Client) log(ctx context.Context, e ErrEntry) {

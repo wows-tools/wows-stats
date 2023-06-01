@@ -10,6 +10,7 @@ import (
 	"github.com/wows-tools/wows-stats/wargaming/wows"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"strings"
@@ -74,7 +75,7 @@ func difference(a, b []*model.Player) []*model.Player {
 }
 
 func (backend *Backend) pesterLogger(e pester.ErrEntry) {
-	backend.Logger.Infof("%d %s [%s] %s request-%d retry-%d error: %s\n", e.Time.Unix(), e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
+	backend.Logger.Infof("%s [%s] %s request-%d retry %d error: %s\n", e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
 }
 
 func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB) *Backend {
@@ -85,9 +86,10 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
 
 	client := pester.New()
 	client.MaxRetries = 5
-	client.Timeout = 10 * time.Second
+	client.SetTimeout(20 * time.Second)
 	client.Backoff = pester.ExponentialJitterBackoff
 	client.SetRetryOnHTTP429(true)
+	client.Ratelimiter = rate.NewLimiter(rate.Every(time.Millisecond*105), 1)
 
 	backend := &Backend{
 		client:      wargaming.NewClient(key, &wargaming.ClientOptions{client}),
@@ -571,11 +573,14 @@ func (backend *Backend) ScrapAll() (err error) {
 }
 
 func (backend *Backend) ScanAllPlayers() (err error) {
-	prefix := "000"
+	prefix := "aaa"
+	apiCallCount := 0
+	trigramPrefixCount := 0
 	backend.Logger.Infof("Start scanning all players")
-	pool := pond.New(10, 10, pond.MinWorkers(10))
+	pool := pond.New(20, 10, pond.MinWorkers(20))
 	for {
-		pool.Submit(func() { backend.ScanAllPlayersTrigram(prefix) })
+		curPrefix := prefix
+		pool.Submit(func() { backend.ScanAllPlayersTrigram(curPrefix, &apiCallCount, &trigramPrefixCount) })
 		prefix = backend.getNextPrefix(prefix, false, prefix)
 		if prefix == "000" {
 			break
@@ -586,13 +591,12 @@ func (backend *Backend) ScanAllPlayers() (err error) {
 	return nil
 }
 
-func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string) (err error) {
+func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, apiCallCount *int, trigramPrefixCount *int) (err error) {
 	if len(startingTrigramPrefix) != 3 {
 		return ErrWrongLengthPrefix
 	}
+
 	trigramPrefixAll := len(prefixOrder) * len(prefixOrder) * len(prefixOrder)
-	trigramPrefixCount := 0
-	apiCallCount := 0
 	prefix := startingTrigramPrefix
 
 	for {
@@ -607,7 +611,7 @@ func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string) (err
 		if err != nil {
 			backend.Logger.Errorf("failed scrapping with prefix %s: %s", prefix, err.Error())
 		}
-		apiCallCount++
+		*apiCallCount++
 		for _, playerData := range res {
 			player := &model.Player{
 				ID:   *playerData.AccountId,
@@ -628,11 +632,12 @@ func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string) (err
 
 		// If the next prefix has a different starting Trigram, it's time to stop
 		if prefix[0:3] != startingTrigramPrefix {
+			*trigramPrefixCount++
 			break
 		}
 		// Every 100 API call, log progress
-		if (apiCallCount % 100) == 0 {
-			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", trigramPrefixCount, trigramPrefixAll, apiCallCount, prefix)
+		if (*apiCallCount % 100) == 0 {
+			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", *trigramPrefixCount, trigramPrefixAll, *apiCallCount, prefix)
 		}
 	}
 	return nil

@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/glebarez/sqlite"
 	"github.com/wows-tools/wows-stats/backend"
 	"github.com/wows-tools/wows-stats/model"
 	"github.com/wows-tools/wows-stats/stats"
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
-	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"moul.io/zapgorm2"
 	"os"
