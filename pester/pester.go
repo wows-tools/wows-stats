@@ -263,7 +263,7 @@ func (c *Client) pester(p params) (*http.Response, error) {
 		if c.Ratelimiter != nil {
 			c.Ratelimiter.Wait(request.Context())
 		}
-		resp, err := c.hc.Do(request)
+		resp, err = c.hc.Do(request)
 
 		// WG API is weird, in case we exceed the API rate (10 req/s), it returns 200 instead of a 429 error
 		// So we need to parse the body, and check the error code in the json payload
