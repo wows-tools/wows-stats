@@ -51,6 +51,8 @@ type Backend struct {
 	Logger         *zap.SugaredLogger
 	DB             *gorm.DB
 	APICallCounter int
+	PrefixBreak    int // Number of trigram prefixes scanned before breaking, usefull when testing
+	ClanBreak      int // Number of clan to scan before braking, once again for testing
 }
 
 func min[T constraints.Ordered](a, b T) T {
@@ -86,7 +88,7 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
 
 	client := pester.New()
 	client.MaxRetries = 5
-	client.SetTimeout(20 * time.Second)
+	client.SetTimeout(10 * time.Second)
 	client.Backoff = pester.ExponentialJitterBackoff
 	client.SetRetryOnHTTP429(true)
 	client.Ratelimiter = rate.NewLimiter(rate.Every(time.Millisecond*105), 1)
@@ -294,23 +296,23 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 
 		player := &model.Player{
 			ID:                  *playerData.AccountId,
-			Nick:                *playerData.Nickname,
-			AccountCreationDate: playerData.CreatedAt.Time,
-			LastBattleDate:      playerData.LastBattleTime.Time,
-			LastLogoutDate:      playerData.LogoutAt.Time,
-			RandomBattles:       battles,
-			RandomWinRate:       wr,
-			RankedBattles:       rankedbattles,
-			RankedWinRate:       rankedwr,
-			RandomDivBattles:    divbattles,
-			RandomDivWinRate:    divwr,
-			CoopBattles:         coopbattles,
-			CoopWinRate:         coopwr,
-			OperBattles:         operbattles,
-			OperWinRate:         operwr,
-			NumberT10:           T10Count,
-			HiddenProfile:       *playerData.HiddenProfile,
-			ClanJoinDate:        JoinDate,
+			Nick:                playerData.Nickname,
+			AccountCreationDate: &playerData.CreatedAt.Time,
+			LastBattleDate:      &playerData.LastBattleTime.Time,
+			LastLogoutDate:      &playerData.LogoutAt.Time,
+			RandomBattles:       &battles,
+			RandomWinRate:       &wr,
+			RankedBattles:       &rankedbattles,
+			RankedWinRate:       &rankedwr,
+			RandomDivBattles:    &divbattles,
+			RandomDivWinRate:    &divwr,
+			CoopBattles:         &coopbattles,
+			CoopWinRate:         &coopwr,
+			OperBattles:         &operbattles,
+			OperWinRate:         &operwr,
+			NumberT10:           &T10Count,
+			HiddenProfile:       playerData.HiddenProfile,
+			ClanJoinDate:        &JoinDate,
 		}
 		ret = append(ret, player)
 	}
@@ -414,7 +416,7 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 					for _, player := range diff {
 						backend.Logger.Infof("player '%s' left clan [%s]", player.Nick, clan.Tag)
 						prevClanEntry := &model.PreviousClan{
-							JoinDate:  player.ClanJoinDate,
+							JoinDate:  *player.ClanJoinDate,
 							LeaveDate: time.Now(),
 							ClanID:    clanPrev.ID,
 							PlayerID:  player.ID,
@@ -436,7 +438,7 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 				backend.Logger.Infof("Failed to get Players: %s", err.Error())
 			}
 			for _, player := range players {
-				player.ClanID = clan.ID
+				player.ClanID = &clan.ID
 				backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
 			}
 			backend.Logger.Debugf("Finish getting player details for clan [%s]", clan.Tag)
@@ -585,6 +587,10 @@ func (backend *Backend) ScanAllPlayers() (err error) {
 		if prefix == "000" {
 			break
 		}
+		// If we reached the total number of prefixes, we stop
+		if backend.PrefixBreak != 0 && trigramPrefixCount > backend.PrefixBreak {
+			break
+		}
 	}
 	pool.StopAndWait()
 	backend.Logger.Infof("Finish scanning all players")
@@ -615,7 +621,7 @@ func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, apiC
 		for _, playerData := range res {
 			player := &model.Player{
 				ID:   *playerData.AccountId,
-				Nick: *playerData.Nickname,
+				Nick: playerData.Nickname,
 			}
 
 			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)

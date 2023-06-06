@@ -79,17 +79,17 @@ func (server *StatsServer) MonthlyBattleEstimation() *charts.Line {
 		}
 
 		for _, player := range players {
-			days := int(player.LastBattleDate.Sub(player.AccountCreationDate).Hours()/24) + 1
-			avgDailyBattles := float64(player.RandomBattles) / float64(days)
-			date := player.AccountCreationDate
-			for date.Before(player.LastBattleDate) {
+			days := int((*player.LastBattleDate).Sub((*player.AccountCreationDate)).Hours()/24) + 1
+			avgDailyBattles := float64(*player.RandomBattles) / float64(days)
+			date := *player.AccountCreationDate
+			for date.Before(*player.LastBattleDate) {
 				month := date.Format("2006-01")
 				nextDate := date.AddDate(0, 1, 0)
 				if nextDate.Day() != 1 {
 					nextDate = nextDate.AddDate(0, 0, -nextDate.Day()+1)
 				}
-				if nextDate.After(player.LastBattleDate) {
-					nextDate = player.LastBattleDate
+				if nextDate.After(*player.LastBattleDate) {
+					nextDate = *player.LastBattleDate
 				}
 				daysInMonth := int(nextDate.Sub(date).Hours() / 24)
 				if _, ok := data[month]; !ok {

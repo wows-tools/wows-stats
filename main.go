@@ -91,6 +91,8 @@ func main() {
 	}
 
 	api := backend.NewBackend(apiKey, server, sugar.With("component", "backend"), db)
+	// api.PrefixBreak = 100
+	// api.ClanBreak = 400
 
 	if !skipScraping {
 		err = api.ScrapAll()
