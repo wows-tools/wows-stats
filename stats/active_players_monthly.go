@@ -78,7 +78,7 @@ func (server *StatsServer) getMonthlyPlayerCounts() ([]int, []string, error) {
 	var creationMonths []string
 
 	// Query distinct months for account creation date
-	if err := server.DB.Raw("SELECT DISTINCT strftime('%Y-%m', account_creation_date) as creation_month FROM players ORDER BY creation_month").Pluck("creation_month", &creationMonths).Error; err != nil {
+	if err := server.DB.Raw("SELECT DISTINCT strftime('%Y-%m', account_creation_date) as creation_month FROM players WHERE account_creation_date is not null ORDER BY creation_month").Pluck("creation_month", &creationMonths).Error; err != nil {
 		return nil, nil, err
 	}
 	sort.Strings(creationMonths)

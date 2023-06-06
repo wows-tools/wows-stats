@@ -65,6 +65,7 @@ func (server *StatsServer) MonthlyBattleEstimation() *charts.Line {
 		var players []model.Player
 		result := server.DB.
 			Limit(pageSize).
+			Where("account_creation_date is not null").
 			Offset(offset).
 			Find(&players)
 
