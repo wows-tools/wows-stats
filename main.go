@@ -61,7 +61,7 @@ func main() {
 	}
 	defer logger.Sync()
 	glogger := zapgorm2.New(logger)
-	glogger.SlowThreshold = time.Millisecond * 10000
+	glogger.SlowThreshold = time.Millisecond * 100000
 	sugar := logger.Sugar()
 	mainLogger := sugar.With("component", "main")
 
@@ -92,7 +92,7 @@ func main() {
 
 	api := backend.NewBackend(apiKey, server, sugar.With("component", "backend"), db)
 	// api.PrefixBreak = 100
-	// api.ClanBreak = 400
+	// api.ClanBreak = 10
 
 	if !skipScraping {
 		err = api.ScrapAll()

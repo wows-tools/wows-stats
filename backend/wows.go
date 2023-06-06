@@ -77,7 +77,11 @@ func difference(a, b []*model.Player) []*model.Player {
 }
 
 func (backend *Backend) pesterLogger(e pester.ErrEntry) {
-	backend.Logger.Infof("%s [%s] %s request-%d retry %d error: %s\n", e.Method, e.Verb, e.URL, e.Request, e.Retry, e.Err)
+	if e.Err != nil {
+		backend.Logger.Infof("Attempt %d/%d failed for [%s] %s | error: %s", e.Retry, e.Request, e.Verb, e.URL, e.Err)
+	} else {
+		backend.Logger.Infof("Attempt %d/%d failed for [%s] %s", e.Retry, e.Request, e.Verb, e.URL)
+	}
 }
 
 func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB) *Backend {
@@ -114,6 +118,7 @@ func (backend *Backend) FillShipMapping() error {
 			Fields: []string{"ship_id", "tier"},
 			PageNo: &pageNo,
 		})
+		backend.APICallCounter++
 		if err != nil && pageNo == 1 {
 			return err
 		}
@@ -147,6 +152,7 @@ func (backend *Backend) GetPlayerT10Count(playerId int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	backend.APICallCounter++
 
 	if len(res) != 1 {
 		return 0, ErrShipReturnInvalid
@@ -192,10 +198,13 @@ func (backend *Backend) GetPlayerDetails(playerIds []int, withT10 bool) ([]*mode
 	if err != nil {
 		return nil, err
 	}
+	backend.APICallCounter++
+
 	clanPlayers, _, err := client.Wows.ClansAccountinfo(context.Background(), realm, playerIds, &wows.ClansAccountinfoOptions{})
 	if err != nil {
 		return nil, err
 	}
+	backend.APICallCounter++
 
 	for _, playerData := range players {
 		if playerData == nil {
@@ -333,6 +342,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
+	backend.APICallCounter++
 	for _, clan := range res {
 		ret = append(ret, *clan.ClanId)
 	}
@@ -349,6 +359,7 @@ func (backend *Backend) GetClansDetails(clanIDs []int) (ret []*model.Clan, err e
 	if err != nil {
 		return nil, err
 	}
+	backend.APICallCounter++
 
 	for _, clan := range clanInfo {
 		// Clan doesn't actually exist
@@ -389,6 +400,9 @@ func (backend *Backend) UpdatePlayerListT10(playerList []*model.Player) ([]*mode
 
 func (backend *Backend) UpdateClans(clanIDs []int) error {
 	for {
+		if len(clanIDs) == 0 {
+			return nil
+		}
 		clanDetails, err := backend.GetClansDetails(clanIDs[0:(min(pageSize, len(clanIDs)))])
 		if err != nil {
 			return err
@@ -495,6 +509,8 @@ func (backend *Backend) getNextPrefix(currentPrefix string, morePrecisionRequire
 }
 
 func (backend *Backend) UpdateDetailsAllPlayers() (err error) {
+	pool := pond.New(20, 10, pond.MinWorkers(20))
+
 	backend.Logger.Infof("Start updating details for all players in DB")
 	offset := 0
 	for {
@@ -503,46 +519,63 @@ func (backend *Backend) UpdateDetailsAllPlayers() (err error) {
 		backend.DB.Offset(offset).Limit(pageSize).Find(&accountList)
 
 		playerIDs := make([]int, len(accountList))
+		var cur_offset int
+		cur_offset = offset
 		for i, account := range accountList {
 			playerIDs[i] = account.ID
 		}
-		players, err := backend.GetPlayerDetails(playerIDs, false)
-		if err != nil {
-			backend.Logger.Infof("Failed to get Players: %s", err.Error())
-		}
-		for _, player := range players {
-			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
-		}
+		pool.Submit(func() { backend.UpdatePlayerBatch(playerIDs, cur_offset) })
 
 		// If we go less than the pageSize in the last query, it's time to stop
-		if len(accountList) < pageSize {
+		if len(playerIDs) < pageSize {
 			break
 		}
 		offset += pageSize
 
 	}
+	pool.StopAndWait()
 	backend.Logger.Infof("Finish updating details for all players in DB")
 	return nil
 }
 
+func (backend *Backend) UpdatePlayerBatch(playerIDs []int, offset int) {
+	players, err := backend.GetPlayerDetails(playerIDs, false)
+	if err != nil {
+		backend.Logger.Infof("Failed to get Players: %s", err.Error())
+	}
+	for _, player := range players {
+		backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
+	}
+	if (backend.APICallCounter % 100) == 0 {
+		backend.Logger.Infof("updated players %d to %d, %d api calls made", offset, offset+pageSize, backend.APICallCounter)
+	}
+
+}
+
 func (backend *Backend) ScrapAllClans() (err error) {
 	backend.Logger.Infof("Start scrapping all clans")
+	pool := pond.New(20, 10, pond.MinWorkers(20))
 	page := 1
 	for {
 		backend.Logger.Infof("Start scrapping clan page [%d]", page)
-		clanIDs, err := backend.ListClansIds(page)
+		var clanIDs []int
+		clanIDs, err = backend.ListClansIds(page)
 		if err != nil {
 			return err
 		}
 
-		backend.UpdateClans(clanIDs)
+		pool.Submit(func() { backend.UpdateClans(clanIDs) })
 
-		backend.Logger.Infof("Finish scrapping clan page [%d]", page)
 		if len(clanIDs) < 100 {
+			break
+		}
+		if backend.ClanBreak != 0 && page > backend.ClanBreak {
+			backend.Logger.Infof("[DEV MODE] breaking scan loop after ~%d clan pages", backend.ClanBreak)
 			break
 		}
 		page++
 	}
+	pool.StopAndWait()
 	backend.Logger.Infof("Finish scrapping all clans")
 	return nil
 }
@@ -576,19 +609,19 @@ func (backend *Backend) ScrapAll() (err error) {
 
 func (backend *Backend) ScanAllPlayers() (err error) {
 	prefix := "000"
-	apiCallCount := 0
 	trigramPrefixCount := 0
 	backend.Logger.Infof("Start scanning all players")
 	pool := pond.New(20, 10, pond.MinWorkers(20))
 	for {
 		curPrefix := prefix
-		pool.Submit(func() { backend.ScanAllPlayersTrigram(curPrefix, &apiCallCount, &trigramPrefixCount) })
+		pool.Submit(func() { backend.ScanAllPlayersTrigram(curPrefix, &trigramPrefixCount) })
 		prefix = backend.getNextPrefix(prefix, false, prefix)
 		if prefix == "000" {
 			break
 		}
 		// If we reached the total number of prefixes, we stop
 		if backend.PrefixBreak != 0 && trigramPrefixCount > backend.PrefixBreak {
+			backend.Logger.Infof("[DEV MODE] breaking scan loop after ~%d player trigram prefixes", backend.PrefixBreak)
 			break
 		}
 	}
@@ -597,7 +630,7 @@ func (backend *Backend) ScanAllPlayers() (err error) {
 	return nil
 }
 
-func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, apiCallCount *int, trigramPrefixCount *int) (err error) {
+func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, trigramPrefixCount *int) (err error) {
 	if len(startingTrigramPrefix) != 3 {
 		return ErrWrongLengthPrefix
 	}
@@ -617,14 +650,14 @@ func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, apiC
 		if err != nil {
 			backend.Logger.Errorf("failed scrapping with prefix %s: %s", prefix, err.Error())
 		}
-		*apiCallCount++
+		backend.APICallCounter++
 		for _, playerData := range res {
 			player := &model.Player{
 				ID:   *playerData.AccountId,
 				Nick: playerData.Nickname,
 			}
 
-			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
+			backend.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(player)
 		}
 		backend.Logger.Debugf("scrapped %d entries with prefix '%s'", len(res), prefix)
 		morePrecisionRequired := (len(res) == pageSize)
@@ -642,8 +675,8 @@ func (backend *Backend) ScanAllPlayersTrigram(startingTrigramPrefix string, apiC
 			break
 		}
 		// Every 100 API call, log progress
-		if (*apiCallCount % 100) == 0 {
-			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", *trigramPrefixCount, trigramPrefixAll, *apiCallCount, prefix)
+		if (backend.APICallCounter % 100) == 0 {
+			backend.Logger.Infof("scrapped %d/%d trigrams, %d api calls made, current prefix: %s", *trigramPrefixCount, trigramPrefixAll, backend.APICallCounter, prefix)
 		}
 	}
 	return nil

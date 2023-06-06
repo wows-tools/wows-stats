@@ -5,7 +5,7 @@ import (
 )
 
 type Player struct {
-	ID                  int       `gorm:"primaryKey"`
+	ID                  int        `gorm:"primaryKey"`
 	Nick                *string    `gorm:"index"`
 	AccountCreationDate *time.Time `gorm:"index"`
 	LastBattleDate      *time.Time `gorm:"index"`
