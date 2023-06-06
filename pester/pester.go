@@ -280,7 +280,7 @@ func (c *Client) pester(p params) (*http.Response, error) {
 			resp.Body = io.NopCloser(bytes.NewReader(respBytes))
 		}
 		if wgResp.Status == "error" {
-			err = errors.New("WOWS_ERROR: " + wgResp.Status)
+			err = errors.New("WOWS_ERROR: " + wgResp.Error.Message)
 		}
 		if err == nil && resp.StatusCode < http.StatusInternalServerError && wgResp.Status != "error" {
 			return resp, err
