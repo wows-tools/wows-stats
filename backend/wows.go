@@ -92,7 +92,7 @@ func NewBackend(key string, realm string, logger *zap.SugaredLogger, db *gorm.DB
 
 	client := pester.New()
 	client.MaxRetries = 5
-	client.SetTimeout(10 * time.Second)
+	client.SetTimeout(20 * time.Second)
 	client.Backoff = pester.ExponentialJitterBackoff
 	client.SetRetryOnHTTP429(true)
 	client.Ratelimiter = rate.NewLimiter(rate.Every(time.Millisecond*105), 1)
@@ -411,7 +411,7 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 		for _, clan := range clanDetails {
 			var clanPrev model.Clan
 			clanPrev.ID = clan.ID
-			err = backend.DB.Preload("Players").First(&clanPrev).Error
+			err = backend.DB.Preload("Players").FirstOrInit(&clanPrev).Error
 			if err == nil {
 				// If the clan was previously tracked, we need to keep it tracked
 				prevPlayersList := make([]int, len(clanPrev.Players))
@@ -436,8 +436,8 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 							PlayerID:  player.ID,
 						}
 						backend.DB.Create(prevClanEntry)
-						backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
 					}
+					backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(diff, 100)
 				}
 				backend.DB.Model(&clanPrev).Association("Players").Delete(diff)
 			}
@@ -453,8 +453,8 @@ func (backend *Backend) UpdateClans(clanIDs []int) error {
 			}
 			for _, player := range players {
 				player.ClanID = &clan.ID
-				backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
 			}
+			backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(players, 100)
 			backend.Logger.Debugf("Finish getting player details for clan [%s]", clan.Tag)
 		}
 		if len(clanIDs) < pageSize {
@@ -543,9 +543,7 @@ func (backend *Backend) UpdatePlayerBatch(playerIDs []int, offset int) {
 	if err != nil {
 		backend.Logger.Infof("Failed to get Players: %s", err.Error())
 	}
-	for _, player := range players {
-		backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(player)
-	}
+	backend.DB.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(players, 100)
 	if (backend.APICallCounter % 100) == 0 {
 		backend.Logger.Infof("updated players %d to %d, %d api calls made", offset, offset+pageSize, backend.APICallCounter)
 	}

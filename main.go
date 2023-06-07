@@ -70,6 +70,11 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	sqldb, err := db.DB()
+	if err != nil {
+		panic("failed to set max connections")
+	}
+	sqldb.SetMaxOpenConns(2)
 
 	Schemas := []interface{}{
 		&model.Player{},
