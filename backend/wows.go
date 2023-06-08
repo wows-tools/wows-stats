@@ -334,7 +334,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 	client := backend.client
 	var ret []int
 	limit := pageSize
-	res, _, err := client.Wows.ClansList(context.Background(), EURealm, &wows.ClansListOptions{
+	res, _, err := client.Wows.ClansList(context.Background(), backend.Realm, &wows.ClansListOptions{
 		Limit:  &limit,
 		PageNo: &page,
 		Fields: []string{"clan_id"},
@@ -352,7 +352,7 @@ func (backend *Backend) ListClansIds(page int) ([]int, error) {
 
 func (backend *Backend) GetClansDetails(clanIDs []int) (ret []*model.Clan, err error) {
 	client := backend.client
-	clanInfo, _, err := client.Wows.ClansInfo(context.Background(), EURealm, clanIDs, &wows.ClansInfoOptions{
+	clanInfo, _, err := client.Wows.ClansInfo(context.Background(), backend.Realm, clanIDs, &wows.ClansInfoOptions{
 		Extra:  []string{"members"},
 		Fields: []string{"description", "name", "tag", "clan_id", "created_at", "is_clan_disbanded", "updated_at", "members_ids", "leader_id"},
 	})
