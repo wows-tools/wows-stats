@@ -580,6 +580,7 @@ func (backend *Backend) ScrapAllClans() (err error) {
 
 func (backend *Backend) ScrapAll() (err error) {
 	backend.Logger.Infof("Start scrapping all players")
+	start := time.Now()
 	err = backend.ScanAllPlayers()
 	if err != nil {
 		return err
@@ -594,6 +595,14 @@ func (backend *Backend) ScrapAll() (err error) {
 	if err != nil {
 		return err
 	}
+	end := time.Now()
+
+	scan := &model.Scan{
+		StartDate:    start,
+		EndDate:      end,
+		ApiCallCount: backend.APICallCounter,
+	}
+	backend.DB.Create(scan)
 
 	// Clean-up, there are ~100k of these tests accounts all created the 2023-05-19 with 1927 random battles
 	backend.DB.Where("nick LIKE 'pt%tpt' or nick LIKE 'lp_ru_prod%' OR nick LIKE 'auto_%'").Where("random_battles = ?", 1927).Delete(&model.Player{})

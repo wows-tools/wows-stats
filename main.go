@@ -80,6 +80,7 @@ func main() {
 		&model.Player{},
 		&model.PreviousClan{},
 		&model.Clan{},
+		&model.Scan{},
 		&model.Version{},
 		&model.WowsVersion{},
 	}
@@ -88,11 +89,10 @@ func main() {
 	var version model.Version
 	version.Version = 0
 	version.Name = "version"
-	db.First(&version)
+	db.FirstOrInit(&version, version)
 	if version.Version < model.DBVersion {
 		db.AutoMigrate(Schemas...)
-		version.Version = model.DBVersion
-		db.Save(&version)
+		db.Model(&version).Update("version", model.DBVersion)
 	}
 
 	api := backend.NewBackend(apiKey, server, sugar.With("component", "backend"), db)

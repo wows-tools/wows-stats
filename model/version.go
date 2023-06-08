@@ -1,7 +1,7 @@
 package model
 
 const (
-	DBVersion = 4
+	DBVersion = 5
 )
 
 type Version struct {
