@@ -26,3 +26,4 @@ wows-stats
 wows-stats.db-journal
 *.swp
 *.html
+*.log
